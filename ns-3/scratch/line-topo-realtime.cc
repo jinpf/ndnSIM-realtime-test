@@ -17,7 +17,7 @@
  *
  * Author: Jin Pengfei <jinpengfei@cstnet.cn>
  */
-// line-topo.cc
+// line-topo-realtime.cc
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/ndnSIM-module.h"
@@ -41,7 +41,7 @@ using namespace ns3;
  *
  * To run scenario and see what is happening, use the following command:
  *
- *     NS_LOG=ndn.Consumer:ndn.Producer ./waf --run=line-topo --vis
+ *     NS_LOG=ndn.Consumer:ndn.Producer ./waf --run=line-topo-realtime --vis
  */
 
 int
@@ -74,12 +74,14 @@ main (int argc, char *argv[])
 
   ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerCbr");
   consumerHelper.SetPrefix (prefix);
-  consumerHelper.SetAttribute ("Frequency", StringValue ("100")); // 100 interests a second
+  consumerHelper.SetAttribute ("Frequency", StringValue ("2")); // 100 interests a second
   consumerHelper.Install (consumerNodes);
 
-  ndn::AppHelper producerHelper ("ns3::ndn::Producer");
+  ndn::AppHelper producerHelper ("ns3::ndn::ProducerR");
   producerHelper.SetPrefix (prefix);
+  producerHelper.SetAttribute("Frequency", StringValue ("1")); // 100 data a second
   producerHelper.SetAttribute ("PayloadSize", StringValue("1024"));
+  producerHelper.SetAttribute("Randomize", StringValue ("exponential"));
   producerHelper.Install (producer);
 
   // Add /prefix origins to ndn::GlobalRouter
