@@ -84,7 +84,7 @@ ProducerR::GetTypeId (void)
                    MakeDoubleChecker<double> ())
 
     .AddAttribute ("MaxSeq", "Max sequence number that can generate",
-                   IntegerValue (100),
+                   IntegerValue (1000),
                    MakeIntegerAccessor(&ProducerR::m_seqMax),
                    MakeIntegerChecker<int32_t>())
 
@@ -192,7 +192,7 @@ ProducerR::SendData(const uint32_t &seq)
   m_face->ReceiveData (data);
   m_transmittedDatas (data, this, m_face);
 
-  std::cout << "  send data" << seq << std::endl;
+  std::cout << "  send data  " << seq << std::endl;
 }
 
 // Attention! not really generate data, just add seq number pretend to generate data
@@ -218,7 +218,7 @@ ProducerR::ScheduleNextData()
       m_generateEvent = Simulator::Schedule (Seconds (0.0),
                                          &ProducerR::GenerateData, this);
     }
-  else if (!m_generateEvent.IsRunning () && m_seq <= m_seqMax)
+  else if (!m_generateEvent.IsRunning () && m_seq < m_seqMax)
     m_generateEvent = Simulator::Schedule (
                                        (m_random == 0) ?
                                          Seconds(1.0 / m_frequency)

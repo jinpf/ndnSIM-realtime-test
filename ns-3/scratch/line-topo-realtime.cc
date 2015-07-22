@@ -72,9 +72,9 @@ main (int argc, char *argv[])
   // Install NDN applications
   std::string prefix = "/prefix";
 
-  ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerCbr");
+  ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerR");
   consumerHelper.SetPrefix (prefix);
-  consumerHelper.SetAttribute ("Frequency", StringValue ("2")); // 100 interests a second
+  // consumerHelper.SetAttribute ("Frequency", StringValue ("2")); // 100 interests a second
   consumerHelper.Install (consumerNodes);
 
   ndn::AppHelper producerHelper ("ns3::ndn::ProducerR");
@@ -82,6 +82,7 @@ main (int argc, char *argv[])
   producerHelper.SetAttribute("Frequency", StringValue ("1")); // 100 data a second
   producerHelper.SetAttribute ("PayloadSize", StringValue("1024"));
   producerHelper.SetAttribute("Randomize", StringValue ("exponential"));
+  producerHelper.SetAttribute("MaxSeq", IntegerValue (1));
   producerHelper.Install (producer);
 
   // Add /prefix origins to ndn::GlobalRouter
