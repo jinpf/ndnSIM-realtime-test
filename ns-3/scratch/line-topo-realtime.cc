@@ -74,6 +74,7 @@ main (int argc, char *argv[])
 
   ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerR");
   consumerHelper.SetPrefix (prefix);
+  consumerHelper.SetAttribute("RetxTimer", StringValue ("500ms"));
   // consumerHelper.SetAttribute ("Frequency", StringValue ("2")); // 100 interests a second
   consumerHelper.Install (consumerNodes);
 
@@ -82,7 +83,7 @@ main (int argc, char *argv[])
   producerHelper.SetAttribute("Frequency", StringValue ("1")); // 100 data a second
   producerHelper.SetAttribute ("PayloadSize", StringValue("1024"));
   producerHelper.SetAttribute("Randomize", StringValue ("exponential"));
-  producerHelper.SetAttribute("MaxSeq", IntegerValue (1));
+  producerHelper.SetAttribute("MaxSeq", IntegerValue (100));
   producerHelper.Install (producer);
 
   // Add /prefix origins to ndn::GlobalRouter

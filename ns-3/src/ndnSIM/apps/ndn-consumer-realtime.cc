@@ -76,7 +76,7 @@ ConsumerR::GetTypeId (void)
 
     .AddAttribute ("RetxTimer",
                    "Timeout defining how frequent retransmission timeouts should be checked",
-                   StringValue ("50ms"),
+                   StringValue ("500ms"),
                    MakeTimeAccessor (&ConsumerR::GetRetxTimer, &ConsumerR::SetRetxTimer),
                    MakeTimeChecker ())
 
@@ -85,11 +85,11 @@ ConsumerR::GetTypeId (void)
                    MakeUintegerAccessor (&ConsumerR::GetWindow, &ConsumerR::SetWindow),
                    MakeUintegerChecker<uint32_t> ())
 
-    .AddTraceSource ("LastRetransmittedInterestDataDelay", "Delay between last retransmitted Interest and received Data",
-                     MakeTraceSourceAccessor (&ConsumerR::m_lastRetransmittedInterestDataDelay))
+    // .AddTraceSource ("LastRetransmittedInterestDataDelay", "Delay between last retransmitted Interest and received Data",
+    //                  MakeTraceSourceAccessor (&ConsumerR::m_lastRetransmittedInterestDataDelay))
 
-    .AddTraceSource ("FirstInterestDataDelay", "Delay between first transmitted Interest and received Data",
-                     MakeTraceSourceAccessor (&ConsumerR::m_firstInterestDataDelay))
+    // .AddTraceSource ("FirstInterestDataDelay", "Delay between first transmitted Interest and received Data",
+    //                  MakeTraceSourceAccessor (&ConsumerR::m_firstInterestDataDelay))
     ;
 
   return tid;
@@ -101,22 +101,13 @@ ConsumerR::ConsumerR ()
 {
   NS_LOG_FUNCTION_NOARGS ();
 
-  m_rtt = CreateObject<RttMeanDeviation> ();
+  // m_rtt = CreateObject<RttMeanDeviation> ();
 }
 
 void
 ConsumerR::SetRetxTimer (Time retxTimer)
 {
   m_retxTimer = retxTimer;
-  if (m_retxEvent.IsRunning ())
-    {
-      // m_retxEvent.Cancel (); // cancel any scheduled cleanup events
-      Simulator::Remove (m_retxEvent); // slower, but better for memory
-    }
-
-  // schedule even with new timeout
-  m_retxEvent = Simulator::Schedule (m_retxTimer,
-                                     &ConsumerR::CheckRetxTimeout, this);
 }
 
 Time
@@ -126,29 +117,14 @@ ConsumerR::GetRetxTimer () const
 }
 
 void
-ConsumerR::CheckRetxTimeout ()
+ConsumerR::CheckRetxTimeout (uint32_t seq)
 {
-  Time now = Simulator::Now ();
+  // std::cout << "check time out!" << std::endl;
+  // std::cout << "[consumer] " << seq << "wait" 
+  //           << Simulator::Now () - In_flight_Seq[seq].last_retx
+  //           << " time out!" << std::endl;
 
-  Time rto = m_rtt->RetransmitTimeout ();
-  // NS_LOG_DEBUG ("Current RTO: " << rto.ToDouble (Time::S) << "s");
-
-  while (!m_seqTimeouts.empty ())
-    {
-      SeqTimeoutsContainer::index<i_timestamp>::type::iterator entry =
-        m_seqTimeouts.get<i_timestamp> ().begin ();
-      if (entry->time + rto <= now) // timeout expired?
-        {
-          uint32_t seqNo = entry->seq;
-          m_seqTimeouts.get<i_timestamp> ().erase (entry);
-          OnTimeout (seqNo);
-        }
-      else
-        break; // nothing else to do. All later packets need not be retransmitted
-    }
-
-  m_retxEvent = Simulator::Schedule (m_retxTimer,
-                                     &ConsumerR::CheckRetxTimeout, this);
+  SendPacket(seq);
 }
 
 void
@@ -185,6 +161,15 @@ ConsumerR::StopApplication () // Called at time specified by Stop
   // cancel periodic packet generation
   Simulator::Cancel (m_sendEvent);
 
+  std::map<uint32_t,Seq_Info>::iterator it = In_flight_Seq.begin();
+  // 'it' is pair pointer, it->first: key, it->second: value
+  while (it != In_flight_Seq.end()) {
+    if (it->second.retxEvent.IsRunning()) {
+      it->second.retxEvent.Cancel();
+      Simulator::Remove(it->second.retxEvent);
+    } 
+  }
+
   // cleanup base stuff
   App::StopApplication ();
 }
@@ -211,29 +196,6 @@ ConsumerR::SendPacket (uint32_t seq)
 
   NS_LOG_FUNCTION_NOARGS ();
 
-  // uint32_t seq=std::numeric_limits<uint32_t>::max (); //invalid
-
-  // while (m_retxSeqs.size ())
-  //   {
-  //     seq = *m_retxSeqs.begin ();
-  //     m_retxSeqs.erase (m_retxSeqs.begin ());
-  //     break;
-  //   }
-
-  // if (seq == std::numeric_limits<uint32_t>::max ())
-  //   {
-  //     if (m_seqMax != std::numeric_limits<uint32_t>::max ())
-  //       {
-  //         if (m_seq >= m_seqMax)
-  //           {
-  //             return; // we are totally done
-  //           }
-  //       }
-
-  //     seq = m_seq++;
-  //   }
-
-  //
   Ptr<Name> nameWithSequence = Create<Name> (m_interestName);
   nameWithSequence->appendSeqNum (seq);
   //
@@ -246,10 +208,11 @@ ConsumerR::SendPacket (uint32_t seq)
   // NS_LOG_INFO ("Requesting Interest: \n" << *interest);
   NS_LOG_INFO ("> Interest for " << seq);
 
-  WillSendOutInterest (seq);  
+  // std::cout << "[consumer] prepare send " << seq << std::endl;
 
-  FwHopCountTag hopCountTag;
-  interest->GetPayload ()->AddPacketTag (hopCountTag);
+  SetRetxProcess (seq);  
+
+  std::cout << "[consumer] send " << seq << std::endl;
 
   m_transmittedInterests (interest, this, m_face);
   m_face->ReceiveInterest (interest);
@@ -257,19 +220,21 @@ ConsumerR::SendPacket (uint32_t seq)
 }
 
 void
-ConsumerR::WillSendOutInterest (uint32_t sequenceNumber)
+ConsumerR::SetRetxProcess (uint32_t seq)
 {
-  NS_LOG_DEBUG ("Trying to add " << sequenceNumber << " with " << Simulator::Now () << ". already " << m_seqTimeouts.size () << " items");
+  // NS_LOG_DEBUG ("Trying to add " << seq << " with " << Simulator::Now () << ". already " << m_seqTimeouts.size () << " items");
 
-  m_seqTimeouts.insert (SeqTimeout (sequenceNumber, Simulator::Now ()));
-  m_seqFullDelay.insert (SeqTimeout (sequenceNumber, Simulator::Now ()));
+  if (In_flight_Seq.find(seq) == In_flight_Seq.end()) {
+    In_flight_Seq[seq].start_time = Simulator::Now();
+  }   
+  In_flight_Seq[seq].last_retx = Simulator::Now();
 
-  m_seqLastDelay.erase (sequenceNumber);
-  m_seqLastDelay.insert (SeqTimeout (sequenceNumber, Simulator::Now ()));
-
-  m_seqRetxCounts[sequenceNumber] ++;
-
-  m_rtt->SentSeq (SequenceNumber32 (sequenceNumber), 1);
+  if (In_flight_Seq[seq].retxEvent.IsRunning()) {
+    In_flight_Seq[seq].retxEvent.Cancel();
+    Simulator::Remove(In_flight_Seq[seq].retxEvent);
+  }
+  In_flight_Seq[seq].retxEvent = Simulator::Schedule (m_retxTimer,
+                                     &ConsumerR::CheckRetxTimeout, this, seq);
 }
 
 ///////////////////////////////////////////////////
@@ -291,38 +256,20 @@ ConsumerR::OnData (Ptr<const Data> data)
   uint32_t seq = data->GetName ().get (-1).toSeqNum ();
   NS_LOG_INFO ("< DATA for " << seq);
 
-  int hopCount = -1;
-  FwHopCountTag hopCountTag;
-  if (data->GetPayload ()->PeekPacketTag (hopCountTag))
-    {
-      hopCount = hopCountTag.Get ();
-    }
+  std::map<uint32_t,Seq_Info>::iterator receSeq = In_flight_Seq.find(seq);
 
-  // add window need to check
+  if (receSeq == In_flight_Seq.end())
+    return;
+
+  if (receSeq->second.retxEvent.IsRunning()) {
+    receSeq->second.retxEvent.Cancel();
+    Simulator::Remove(receSeq->second.retxEvent);
+  }
+
+  In_flight_Seq.erase(seq);
+
   if (m_Window < m_MaxWindow)
     m_Window ++;
-
-  SeqTimeoutsContainer::iterator entry = m_seqLastDelay.find (seq);
-
-  if (entry != m_seqLastDelay.end ())
-    {
-      m_lastRetransmittedInterestDataDelay (this, seq, Simulator::Now () - entry->time, hopCount);
-    }
-
-  entry = m_seqFullDelay.find (seq);
-  if (entry != m_seqFullDelay.end ())
-    {
-      m_firstInterestDataDelay (this, seq, Simulator::Now () - entry->time, m_seqRetxCounts[seq], hopCount);
-    }
-
-  m_seqRetxCounts.erase (seq);
-  m_seqFullDelay.erase (seq);
-  m_seqLastDelay.erase (seq);
-
-  m_seqTimeouts.erase (seq);
-  m_retxSeqs.erase (seq);
-
-  m_rtt->AckSeq (SequenceNumber32 (seq));
 
   ScheduleNextPacket();
 }
@@ -343,27 +290,7 @@ ConsumerR::OnNack (Ptr<const Interest> interest)
   NS_LOG_INFO ("< NACK for " << seq);
   // std::cout << Simulator::Now ().ToDouble (Time::S) << "s -> " << "NACK for " << seq << "\n";
 
-  // put in the queue of interests to be retransmitted
-  // NS_LOG_INFO ("Before: " << m_retxSeqs.size ());
-  m_retxSeqs.insert (seq);
-  // NS_LOG_INFO ("After: " << m_retxSeqs.size ());
-
-  m_seqTimeouts.erase (seq);
-
-  m_rtt->IncreaseMultiplier ();             // Double the next RTO ??
-  ScheduleNextPacket ();
-}
-
-void
-ConsumerR::OnTimeout (uint32_t sequenceNumber)
-{
-  NS_LOG_FUNCTION (sequenceNumber);
-  std::cout << Simulator::Now () << ", TO: " << sequenceNumber << ", current RTO: " << m_rtt->RetransmitTimeout ().ToDouble (Time::S) << "s\n";
-
-  m_rtt->IncreaseMultiplier ();             // Double the next RTO
-  m_rtt->SentSeq (SequenceNumber32 (sequenceNumber), 1); // make sure to disable RTT calculation for this sample
-  m_retxSeqs.insert (sequenceNumber);
-  SendPacket (sequenceNumber);
+  SendPacket (seq);
 }
 
 } // namespace ndn
