@@ -33,8 +33,8 @@
 #include "ns3/ndn-app-face.h"
 #include "ns3/ndn-interest.h"
 #include "ns3/ndn-data.h"
-#include "ns3/ndnSIM/utils/ndn-fw-hop-count-tag.h"
-#include "ns3/ndnSIM/utils/ndn-rtt-mean-deviation.h"
+// #include "ns3/ndnSIM/utils/ndn-fw-hop-count-tag.h"
+// #include "ns3/ndnSIM/utils/ndn-rtt-mean-deviation.h"
 
 #include <boost/ref.hpp>
 
@@ -82,14 +82,12 @@ ConsumerR::GetTypeId (void)
 
     .AddAttribute ("Window", "window size",
                    StringValue ("5"),
-                   MakeUintegerAccessor (&ConsumerR::GetWindow, &ConsumerR::SetWindow),
-                   MakeUintegerChecker<uint32_t> ())
+                   MakeIntegerAccessor (&ConsumerR::GetWindow, &ConsumerR::SetWindow),
+                   MakeIntegerChecker<int32_t> ())
 
-    // .AddTraceSource ("LastRetransmittedInterestDataDelay", "Delay between last retransmitted Interest and received Data",
-    //                  MakeTraceSourceAccessor (&ConsumerR::m_lastRetransmittedInterestDataDelay))
+    .AddTraceSource ("PacketRecord", "Record data send and receive in file",
+                     MakeTraceSourceAccessor (&ConsumerR::m_PacketRecord))
 
-    // .AddTraceSource ("FirstInterestDataDelay", "Delay between first transmitted Interest and received Data",
-    //                  MakeTraceSourceAccessor (&ConsumerR::m_firstInterestDataDelay))
     ;
 
   return tid;
@@ -117,7 +115,7 @@ ConsumerR::GetRetxTimer () const
 }
 
 void
-ConsumerR::CheckRetxTimeout (uint32_t seq)
+ConsumerR::Timeout (uint32_t seq)
 {
   // std::cout << "check time out!" << std::endl;
   // std::cout << "[consumer] " << seq << "wait" 
@@ -128,7 +126,7 @@ ConsumerR::CheckRetxTimeout (uint32_t seq)
 }
 
 void
-ConsumerR::SetWindow (uint32_t window)
+ConsumerR::SetWindow (int32_t window)
 {
   m_MaxWindow = window;
 }
@@ -184,6 +182,7 @@ ConsumerR::ScheduleNextPacket ()
   {
     m_Window --;
     m_seq ++;
+    // std::cout << "[consumer] prepare send " << m_seq << " win: " << m_Window << std::endl;
     SendPacket(m_seq);
   }
 
@@ -208,14 +207,24 @@ ConsumerR::SendPacket (uint32_t seq)
   // NS_LOG_INFO ("Requesting Interest: \n" << *interest);
   NS_LOG_INFO ("> Interest for " << seq);
 
-  // std::cout << "[consumer] prepare send " << seq << std::endl;
-
-  SetRetxProcess (seq);  
-
   std::cout << "[consumer] send " << seq << std::endl;
 
   m_transmittedInterests (interest, this, m_face);
   m_face->ReceiveInterest (interest);
+
+  // record in In_flight_seq
+  if (In_flight_Seq.find(seq) == In_flight_Seq.end()) {
+    In_flight_Seq[seq].start_time = Simulator::Now();
+    In_flight_Seq[seq].retx_count = 0;
+  } else {
+    In_flight_Seq[seq].retx_count ++ ;
+  }
+
+  // record in file
+  m_PacketRecord(this, nameWithSequence->toUri(), seq, "C_Interest", In_flight_Seq[seq].retx_count, 
+                 m_Window, m_MaxWindow, m_interestLifeTime);
+
+  SetRetxProcess (seq);
 
 }
 
@@ -224,9 +233,6 @@ ConsumerR::SetRetxProcess (uint32_t seq)
 {
   // NS_LOG_DEBUG ("Trying to add " << seq << " with " << Simulator::Now () << ". already " << m_seqTimeouts.size () << " items");
 
-  if (In_flight_Seq.find(seq) == In_flight_Seq.end()) {
-    In_flight_Seq[seq].start_time = Simulator::Now();
-  }   
   In_flight_Seq[seq].last_retx = Simulator::Now();
 
   if (In_flight_Seq[seq].retxEvent.IsRunning()) {
@@ -234,7 +240,7 @@ ConsumerR::SetRetxProcess (uint32_t seq)
     Simulator::Remove(In_flight_Seq[seq].retxEvent);
   }
   In_flight_Seq[seq].retxEvent = Simulator::Schedule (m_retxTimer,
-                                     &ConsumerR::CheckRetxTimeout, this, seq);
+                                     &ConsumerR::Timeout, this, seq);
 }
 
 ///////////////////////////////////////////////////
@@ -257,7 +263,6 @@ ConsumerR::OnData (Ptr<const Data> data)
   NS_LOG_INFO ("< DATA for " << seq);
 
   std::map<uint32_t,Seq_Info>::iterator receSeq = In_flight_Seq.find(seq);
-
   if (receSeq == In_flight_Seq.end())
     return;
 
@@ -265,6 +270,10 @@ ConsumerR::OnData (Ptr<const Data> data)
     receSeq->second.retxEvent.Cancel();
     Simulator::Remove(receSeq->second.retxEvent);
   }
+
+  // record in file
+  m_PacketRecord(this, data->GetName().toUri(), seq, "C_Data", In_flight_Seq[seq].retx_count, 
+                 m_Window, m_MaxWindow, m_interestLifeTime);
 
   In_flight_Seq.erase(seq);
 
@@ -289,6 +298,14 @@ ConsumerR::OnNack (Ptr<const Interest> interest)
   uint32_t seq = interest->GetName ().get (-1).toSeqNum ();
   NS_LOG_INFO ("< NACK for " << seq);
   // std::cout << Simulator::Now ().ToDouble (Time::S) << "s -> " << "NACK for " << seq << "\n";
+
+  std::map<uint32_t,Seq_Info>::iterator receSeq = In_flight_Seq.find(seq);
+  if (receSeq == In_flight_Seq.end())
+    return;
+
+  // record in file
+  m_PacketRecord(this, interest->GetName().toUri(), seq, "C_Nack", In_flight_Seq[seq].retx_count, 
+                 m_Window, m_MaxWindow, m_interestLifeTime);
 
   SendPacket (seq);
 }

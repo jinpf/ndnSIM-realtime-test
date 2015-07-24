@@ -67,6 +67,10 @@ protected:
   std::string m_randomType; //  random type: uniform or exponential
   EventId m_generateEvent; // EventId of generate data event
 
+  // added to record information by using tracers
+  TracedCallback<Ptr<App> , std::string , uint32_t , std::string , uint32_t , int32_t , int32_t , Time>
+    m_PacketRecord;
+
   virtual void
   StartApplication ();    // Called at time specified by Start
 

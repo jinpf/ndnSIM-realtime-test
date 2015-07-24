@@ -93,6 +93,9 @@ ProducerR::GetTypeId (void)
                    MakeStringAccessor (&ProducerR::SetRandomize, &ProducerR::GetRandomize),
                    MakeStringChecker ())
 
+    .AddTraceSource ("PacketRecord", "Record data send and receive in file",
+                     MakeTraceSourceAccessor (&ProducerR::m_PacketRecord))
+
     ;
   return tid;
 }
@@ -161,6 +164,10 @@ ProducerR::OnInterest (Ptr<const Interest> interest)
 
   std::cout << "[producer]receive comsumer request: " << seq ;
 
+  // record in file
+  m_PacketRecord(this, interest->GetName().toUri(), seq, "P_Interest", 0, 
+                 0, 0, Time(0));
+
   if ( seq > m_seq ) {
     std::cout << "  but i don`t have..." << std::endl;
     return;
@@ -192,6 +199,10 @@ ProducerR::SendData(const uint32_t &seq)
   m_face->ReceiveData (data);
   m_transmittedDatas (data, this, m_face);
 
+  // record in file
+  m_PacketRecord(this, dataName->toUri(), seq, "P_Data", 0, 
+                 0, 0, Time(0));
+
   std::cout << "  send data  " << seq << std::endl;
 }
 
@@ -202,9 +213,15 @@ ProducerR::GenerateData()
   if (m_seq != std::numeric_limits<uint32_t>::max()) {
     // generate data and plus seq number
     m_seq++;
-    // log record in file
-    // m_PacketRecord(this, "P_GData", m_prefix.toUri(), m_seq, 0);
     std::cout << "[producer]generate data:" << m_seq << std::endl;
+
+    Ptr<Name> dataName = Create<Name> (m_prefix);
+    dataName->appendSeqNum (m_seq);
+
+    // record in file
+    m_PacketRecord(this, dataName->toUri(), m_seq, "P_GData", 0, 
+                   0, 0, Time(0));
+
     // schedule to generate next data
     ScheduleNextData();
   }

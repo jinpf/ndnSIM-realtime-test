@@ -22,6 +22,8 @@
 #include "ns3/network-module.h"
 #include "ns3/ndnSIM-module.h"
 
+#include "ns3/ndnSIM/utils/tracers/app-packet-tracer.h"
+
 using namespace ns3;
 
 /**
@@ -91,6 +93,9 @@ main (int argc, char *argv[])
 
   // Calculate and install FIBs
   ndn::GlobalRoutingHelper::CalculateRoutes ();
+
+  // add tracer to record in file
+  ndn::AppPacketTracer::InstallAll ("scratch/subdir/record/line-packet-record.txt");
 
   Simulator::Stop (Seconds (20.0));
 

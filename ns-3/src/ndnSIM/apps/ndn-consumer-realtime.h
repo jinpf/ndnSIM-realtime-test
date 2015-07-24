@@ -31,10 +31,10 @@
 // #include <set>
 #include <map>
 
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/tag.hpp>
-#include <boost/multi_index/ordered_index.hpp>
-#include <boost/multi_index/member.hpp>
+// #include <boost/multi_index_container.hpp>
+// #include <boost/multi_index/tag.hpp>
+// #include <boost/multi_index/ordered_index.hpp>
+// #include <boost/multi_index/member.hpp>
 
 namespace ns3 {
 namespace ndn {
@@ -90,7 +90,7 @@ protected:
    * \brief Checks if the packet need to be retransmitted becuase of retransmission timer expiration
    */
   void
-  CheckRetxTimeout (uint32_t seq);
+  Timeout (uint32_t seq);
 
   /**
    * \brief Modifies the frequency of checking the retransmission timeouts
@@ -117,18 +117,23 @@ protected:
   EventId         m_sendEvent; ///< @brief EventId of pending "send packet" event
   Time            m_retxTimer; ///< @brief Currently estimated retransmission timer
 
-  Time            m_offTime;             ///< \brief Time interval between packets
+  // Time            m_offTime;             ///< \brief Time interval between packets
   Name            m_interestName;        ///< \brief NDN Name of the Interest (use Name)
   Time            m_interestLifeTime;    ///< \brief LifeTime for interest packet
 
+  // added to record information by using tracers
+  TracedCallback<Ptr<App> , std::string , uint32_t , std::string , uint32_t , int32_t , int32_t , Time>
+    m_PacketRecord;
+
 private:
-  uint32_t m_MaxWindow; // max window size
-  uint32_t m_Window;  // now window size
+  int32_t m_MaxWindow; // max window size
+  int32_t m_Window;  // now window size
 
   struct Seq_Info
   {
     Time       start_time;  // seq first send time
     Time       last_retx;   // seq last send time
+    uint32_t   retx_count;  // retransmit time
     EventId    retxEvent;
   };
 
@@ -138,7 +143,7 @@ private:
   GetWindow() const;
 
   void
-  SetWindow (uint32_t window);
+  SetWindow (int32_t window);
 
 };
 

@@ -21,7 +21,8 @@ import os, shutil
 
 # redir = {'src':'dis'}
 redir = {'./ns-3/scratch' : '../ns-3/scratch' , \
-		 './ns-3/src/ndnSIM/apps' : '../ns-3/src/ndnSIM/apps'}
+		 './ns-3/src/ndnSIM/apps' : '../ns-3/src/ndnSIM/apps' , \
+		 './ns-3/src/ndnSIM/utils/tracers' : '../ns-3/src/ndnSIM/utils/tracers'}
 
 def recover(src, dst):
 	names = os.listdir(src)

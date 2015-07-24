@@ -21,7 +21,9 @@ import os, shutil
 
 # syndir = {'src':'dis'}
 syndir = {'../ns-3/scratch' : './ns-3/scratch' , \
-		  '../ns-3/src/ndnSIM/apps' : './ns-3/src/ndnSIM/apps'}
+		  '../ns-3/src/ndnSIM/apps' : './ns-3/src/ndnSIM/apps' , \
+		  '../ns-3/src/ndnSIM/utils/tracers' : './ns-3/src/ndnSIM/utils/tracers'
+		  }
 
 def ignorefile(path, names):
 	ifile = set([])
@@ -43,6 +45,31 @@ def ignorefile(path, names):
 		             'ndn-consumer.cc', \
 		             'ndn-consumer-zipf-mandelbrot.cc', \
 		             'ndn-consumer-batches.h'])
+	if path == '../ns-3/src/ndnSIM/utils/tracers':
+		ifile = set(['ndn-cs-tracer.h', \
+					 'ipv4-rate-l3-tracer.cc', \
+					 'ndn-l3-tracer.h', \
+					 'ipv4-seqs-app-tracer.h', \
+					 'ipv4-l3-tracer.h', \
+					 'ndn-l3-tracer.cc', \
+					 'l2-tracer.h', \
+					 'l2-rate-tracer.cc', \
+					 'ipv4-rate-l3-tracer.h', \
+					 'ipv4-seqs-app-tracer.cc', \
+					 'l2-tracer.cc', \
+					 'ndn-l3-aggregate-tracer.h', \
+					 'ndn-app-delay-tracer.h', \
+					 'ipv4-app-tracer.cc', \
+					 'ndn-app-delay-tracer.cc', \
+					 'ipv4-app-tracer.h', \
+					 'l2-rate-tracer.h', \
+					 'ndn-l3-rate-tracer.h', \
+					 'ipv4-l3-tracer.cc', \
+					 'ndn-l3-aggregate-tracer.cc', \
+					 'ndn-l3-rate-tracer.cc', \
+					 'ndn-cs-tracer.cc'])
+
+
 	return ifile
 
 
