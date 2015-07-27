@@ -179,7 +179,7 @@ AppPacketTracer::Install (Ptr<Node> node, const std::string &file)
     {
       // *m_l3RateTrace << "# "; // not necessary for R's read.table
       tracers.front ()->PrintHeader (*outputStream);
-      *outputStream << "\n";
+      // *outputStream << "\n";
     }
 
   g_tracers.push_back (boost::make_tuple (outputStream, tracers));
