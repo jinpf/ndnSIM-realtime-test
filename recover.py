@@ -4,17 +4,6 @@
 
 '''
 This for recover the code to real modification
-
-dir tree:
-
-ns-3
--scratch
--scr
---ndnSIM
---apps
-ndnSIM-realtime-test
--ns-3
-
 '''
 
 import os, shutil
