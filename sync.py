@@ -19,11 +19,19 @@ ndnSIM-realtime-test
 
 import os, shutil
 
-# syndir = {'src':'dis'}
+# syndir = {'src':'dis'}  this files are synchronized by dir
 syndir = {'../ns-3/scratch' : './ns-3/scratch' , \
 		  '../ns-3/src/ndnSIM/apps' : './ns-3/src/ndnSIM/apps' , \
-		  '../ns-3/src/ndnSIM/utils/tracers' : './ns-3/src/ndnSIM/utils/tracers'
+		  '../ns-3/src/ndnSIM/utils/tracers' : './ns-3/src/ndnSIM/utils/tracers' , \
+		  '../ns-3/src/ndnSIM/model/fw' : './ns-3/src/ndnSIM/model/fw'
 		  }
+
+# synfile = {'src':'dis'}   this files are synchronized by file
+synfile = {'../ns-3/src/ndnSIM/model/ndn-interest.h' : './ns-3/src/ndnSIM/model/ndn-interest.h' , \
+		   '../ns-3/src/ndnSIM/model/ndn-interest.cc' : './ns-3/src/ndnSIM/model/ndn-interest.cc' , \
+		   '../ns-3/src/ndnSIM/model/ndn-data.h' : './ns-3/src/ndnSIM/model/ndn-data.h' , \
+		   '../ns-3/src/ndnSIM/model/ndn-data.cc' : './ns-3/src/ndnSIM/model/ndn-data.cc'
+		   }
 
 def ignorefile(path, names):
 	ifile = set([])
@@ -68,17 +76,39 @@ def ignorefile(path, names):
 					 'ndn-l3-aggregate-tracer.cc', \
 					 'ndn-l3-rate-tracer.cc', \
 					 'ndn-cs-tracer.cc'])
+	if path == '../ns-3/src/ndnSIM/model/fw':
+		ifile = set(['per-fib-limits.cc', \
+					 'ndn-forwarding-strategy.cc', \
+					 'per-out-face-limits.cc', \
+					 'flooding.cc', \
+					 'ndn-forwarding-strategy.h', \
+					 'green-yellow-red.h', \
+					 'ndn-fw-tag.h', \
+					 'per-out-face-limits.h', \
+					 'flooding.h', \
+					 'per-fib-limits.h', \
+					 'nacks.h', \
+					 'smart-flooding.h', \
+					 'smart-flooding.cc', \
+					 'best-route.cc', \
+					 'green-yellow-red.cc', \
+					 'best-route.h', \
+					 'nacks.cc'])
 
 
 	return ifile
 
 
-def syntree(src, dst):
+def syn_by_dir(src, dst):
 	if os.path.exists(dst):
 		shutil.rmtree(dst)
 	shutil.copytree(src, dst, ignore=ignorefile)
 
-
 if __name__ == '__main__':
+	# syn by dir
 	for i in syndir:
-		syntree(i,syndir[i])
+		syn_by_dir(i,syndir[i])
+
+	# syn by file
+	for i in synfile:
+		shutil.copy2(i,synfile[i])

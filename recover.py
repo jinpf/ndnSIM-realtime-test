@@ -22,7 +22,15 @@ import os, shutil
 # redir = {'src':'dis'}
 redir = {'./ns-3/scratch' : '../ns-3/scratch' , \
 		 './ns-3/src/ndnSIM/apps' : '../ns-3/src/ndnSIM/apps' , \
-		 './ns-3/src/ndnSIM/utils/tracers' : '../ns-3/src/ndnSIM/utils/tracers'}
+		 './ns-3/src/ndnSIM/utils/tracers' : '../ns-3/src/ndnSIM/utils/tracers' , \
+		 './ns-3/src/ndnSIM/model/fw' : '../ns-3/src/ndnSIM/model/fw'
+		}
+
+refile = {'./ns-3/src/ndnSIM/model/ndn-interest.h' : '../ns-3/src/ndnSIM/model/ndn-interest.h' , \
+		   './ns-3/src/ndnSIM/model/ndn-interest.cc' : '../ns-3/src/ndnSIM/model/ndn-interest.cc' , \
+		   './ns-3/src/ndnSIM/model/ndn-data.h' : '../ns-3/src/ndnSIM/model/ndn-data.h' , \
+		   './ns-3/src/ndnSIM/model/ndn-data.cc' : '../ns-3/src/ndnSIM/model/ndn-data.cc'
+		   }
 
 def recover(src, dst):
 	names = os.listdir(src)
@@ -40,3 +48,5 @@ def recover(src, dst):
 if __name__ == '__main__':
 	for i in redir:
 		recover(i,redir[i])
+	for i in refile:
+		shutil.copy2(i,refile[i])
