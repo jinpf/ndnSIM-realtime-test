@@ -3,7 +3,7 @@
 # @Author: jinpf
 # @Date:   2015-07-24 22:14:06
 # @Last Modified by:   jinpf
-# @Last Modified time: 2015-07-27 08:52:04
+# @Last Modified time: 2015-07-27 09:10:02
 
 
 def read_calculate(fname):
@@ -12,7 +12,6 @@ def read_calculate(fname):
 		P_GData_seq = {}
 		# C_Data_seq : {seq:time}
 		C_Data_seq = {}
-		f.readline()
 		f.readline()
 		record = f.readline()
 		while record != '':

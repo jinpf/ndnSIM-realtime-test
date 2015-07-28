@@ -73,7 +73,7 @@ def ignorefile(path, names):
 	return ifile
 
 
-def synfile(src, dst):
+def syntree(src, dst):
 	if os.path.exists(dst):
 		shutil.rmtree(dst)
 	shutil.copytree(src, dst, ignore=ignorefile)
@@ -81,4 +81,4 @@ def synfile(src, dst):
 
 if __name__ == '__main__':
 	for i in syndir:
-		synfile(i,syndir[i])
+		syntree(i,syndir[i])
