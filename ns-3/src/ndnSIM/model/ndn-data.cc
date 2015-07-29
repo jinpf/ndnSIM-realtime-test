@@ -32,6 +32,7 @@ namespace ndn {
 
 Data::Data (Ptr<Packet> payload/* = Create<Packet> ()*/)
   : m_name (Create<Name> ())
+  , m_pushTag (PULL_DATA)
   , m_signature (0)
   , m_payload (payload)
   , m_keyLocator (0)
@@ -45,6 +46,7 @@ Data::Data (Ptr<Packet> payload/* = Create<Packet> ()*/)
 
 Data::Data (const Data &other)
   : m_name (Create<Name> (other.GetName ()))
+  , m_pushTag (other.GetPushTag())
   , m_freshness (other.GetFreshness ())
   , m_timestamp (other.GetTimestamp ())
   , m_signature (other.GetSignature ())
@@ -82,6 +84,19 @@ Ptr<const Name>
 Data::GetNamePtr () const
 {
   return m_name;
+}
+
+void
+Data::SetPushTag (uint8_t pushTag)
+{
+  m_pushTag = pushTag;
+  m_wire = 0;
+}
+
+uint8_t
+Data::GetPushTag () const
+{
+  return m_pushTag;
 }
 
 

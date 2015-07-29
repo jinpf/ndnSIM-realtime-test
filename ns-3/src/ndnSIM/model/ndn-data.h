@@ -79,6 +79,21 @@ public:
   Ptr<const Name>
   GetNamePtr () const;
 
+  // Add Data type {pull \ push}
+
+  enum 
+  {  
+    PULL_DATA = 0,
+    PUSH_DATA = 2,
+    PUSH_SUB_ACK = 3
+  };
+
+  void
+  SetPushTag (uint8_t pushTag);
+
+  uint8_t
+  GetPushTag () const;
+
   /**
    * @brief Set content object timestamp
    * @param timestamp timestamp
@@ -181,6 +196,10 @@ private:
   
 private:
   Ptr<Name> m_name;
+
+  // push tag
+  uint8_t m_pushTag;
+
   Time m_freshness;
   Time m_timestamp;
   uint32_t m_signature; // 0, means no signature, any other value application dependent (not a real signature)

@@ -22,8 +22,6 @@
 #include "ns3/network-module.h"
 #include "ns3/ndnSIM-module.h"
 
-#include "ns3/ndnSIM/utils/tracers/app-packet-tracer.h"
-
 using namespace ns3;
 
 /**

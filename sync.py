@@ -12,11 +12,13 @@ import os, shutil
 syndir = {'../ns-3/scratch' : './ns-3/scratch' , \
 		  '../ns-3/src/ndnSIM/apps' : './ns-3/src/ndnSIM/apps' , \
 		  '../ns-3/src/ndnSIM/utils/tracers' : './ns-3/src/ndnSIM/utils/tracers' , \
-		  '../ns-3/src/ndnSIM/model/fw' : './ns-3/src/ndnSIM/model/fw'
+		  '../ns-3/src/ndnSIM/model/fw' : './ns-3/src/ndnSIM/model/fw' , \
+		  '../ns-3/src/ndnSIM/model/spit' : './ns-3/src/ndnSIM/model/spit'
 		  }
 
 # synfile = {'src':'dis'}   this files are synchronized by file
-synfile = {'../ns-3/src/ndnSIM/model/ndn-interest.h' : './ns-3/src/ndnSIM/model/ndn-interest.h' , \
+synfile = {'../ns-3/src/ndnSIM/wscript' : './ns-3/src/ndnSIM/wscript' , \
+		   '../ns-3/src/ndnSIM/model/ndn-interest.h' : './ns-3/src/ndnSIM/model/ndn-interest.h' , \
 		   '../ns-3/src/ndnSIM/model/ndn-interest.cc' : './ns-3/src/ndnSIM/model/ndn-interest.cc' , \
 		   '../ns-3/src/ndnSIM/model/ndn-data.h' : './ns-3/src/ndnSIM/model/ndn-data.h' , \
 		   '../ns-3/src/ndnSIM/model/ndn-data.cc' : './ns-3/src/ndnSIM/model/ndn-data.cc'

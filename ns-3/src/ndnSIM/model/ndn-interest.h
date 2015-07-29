@@ -178,6 +178,21 @@ public:
   uint8_t
   GetNack () const;
 
+  // add interest type {pull \ push}
+
+  enum 
+  {  
+    PULL_INTEREST = 0,
+    PUSH_SUB_INTEREST = 2,
+    PUSH_UNSUB_INTEREST = 3
+  };
+
+  void
+  SetPushTag (uint8_t pushTag);
+
+  uint8_t
+  GetPushTag () const;
+
   /**
    * @brief Set exclude filter of interest packet
    *
@@ -239,6 +254,9 @@ private:
   Time  m_interestLifetime; ///< @brief InterestLifetime
   uint32_t m_nonce;         ///< @brief Nonce. not used if zero
   uint8_t  m_nackType;      ///< @brief Negative Acknowledgement type
+
+  // push tag
+  uint8_t m_pushTag;
 
   Ptr<Exclude> m_exclude;   ///< @brief Exclude filter
   Ptr<Packet> m_payload;    ///< @brief virtual payload
