@@ -57,7 +57,7 @@ main (int argc, char *argv[])
 
   // Install NDN stack on all nodes
   ndn::StackHelper ndnHelper;
-  ndnHelper.SetForwardingStrategy ("ns3::ndn::HybridForwarding");
+  ndnHelper.SetForwardingStrategy ("ns3::ndn::fw::HybridForwording");
   ndnHelper.InstallAll ();
 
   // Installing global routing interface on all nodes
@@ -93,9 +93,9 @@ main (int argc, char *argv[])
   ndn::GlobalRoutingHelper::CalculateRoutes ();
 
   // add tracer to record in file
-  ndn::AppPacketTracer::InstallAll ("scratch/subdir/record/line-packet-record.txt");
+  // ndn::AppPacketTracer::InstallAll ("scratch/subdir/record/line-packet-record.txt");
 
-  Simulator::Stop (Seconds (20.0));
+  Simulator::Stop (Seconds (10.0));
 
   Simulator::Run ();
   Simulator::Destroy ();

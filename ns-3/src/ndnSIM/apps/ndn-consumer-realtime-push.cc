@@ -141,7 +141,18 @@ ConsumerP::SendSubscribePacket ()
   m_transmittedInterests (interest, this, m_face);
   m_face->ReceiveInterest (interest);
 
-  std::cout << "[consumer]:Subscribe!" << std::endl;
+  // std::cout << "[consumer]:Subscribe!" << std::endl;
+
+  if (interest->GetPushTag() == Interest::PUSH_SUB_INTEREST) {
+
+    std::cout << "[consumer]send subscribe interest" << std::endl;
+
+    
+  } else if (interest->GetPushTag() == Interest::PULL_INTEREST) {
+
+    std::cout << "[consumer]:send pull interest?" << std::endl;
+
+  }
 
   ScheduleNextPacket ();
 }
