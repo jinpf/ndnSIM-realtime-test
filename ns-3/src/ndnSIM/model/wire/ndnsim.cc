@@ -6,7 +6,11 @@
  * GNU 3.0 license, See the LICENSE file for more information
  * 
  * Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
+ *         Jin Pengfei <jinpengfei@cstnet.cn>
  */
+
+
+ /* modify function: GetSerializedSize, Serialize, Deserialize  */
 
 #include "ndnsim.h"
 
@@ -103,7 +107,7 @@ Interest::GetSerializedSize (void) const
 {
   size_t size =
     1/*version*/ + 1 /*type*/ + 2/*length*/ +
-    (4/*nonce*/ + 1/*scope*/ + 1/*nack type*/ + 2/*timestamp*/ +
+    (4/*nonce*/ + 1/*scope*/ + 1/*nack type*/ + 1/*push type*/ + 2/*timestamp*/ +
      NdnSim::SerializedSizeName (m_interest->GetName ()) +
 
      (2 +
@@ -127,6 +131,8 @@ Interest::Serialize (Buffer::Iterator start) const
   start.WriteU32 (m_interest->GetNonce ());
   start.WriteU8 (m_interest->GetScope ());
   start.WriteU8 (m_interest->GetNack ());
+  start.WriteU8 (m_interest->GetPushTag ());
+
 
   NS_ASSERT_MSG (0 <= m_interest->GetInterestLifetime ().ToInteger (Time::S) && m_interest->GetInterestLifetime ().ToInteger (Time::S) < 65535,
                  "Incorrect InterestLifetime (should not be smaller than 0 and larger than 65535");
@@ -166,6 +172,7 @@ Interest::Deserialize (Buffer::Iterator start)
   m_interest->SetNonce (i.ReadU32 ());
   m_interest->SetScope (i.ReadU8 ());
   m_interest->SetNack (i.ReadU8 ());
+  m_interest->SetPushTag (i.ReadU8 ());
 
   m_interest->SetInterestLifetime (Seconds (i.ReadU16 ()));
 
@@ -266,7 +273,7 @@ Data::FromWire (Ptr<Packet> packet)
 uint32_t
 Data::GetSerializedSize () const
 {
-  uint32_t size = 1 + 1 + 2 +
+  uint32_t size = 1 + 1 + 2 + 1 /*push tag*/ +
     ((2 + 2) +
      NdnSim::SerializedSizeName (m_data->GetName ()) +
      (2 + 2 + 4 + 2 + 2 + (2 + 0)));
@@ -283,6 +290,7 @@ Data::Serialize (Buffer::Iterator start) const
   start.WriteU8 (0x80); // version
   start.WriteU8 (0x01); // packet type
   start.WriteU16 (GetSerializedSize () - 4); // length
+  start.WriteU8 (m_data->GetPushTag());  // push tag
   
   if (m_data->GetSignature () != 0)
     {
@@ -323,6 +331,8 @@ Data::Deserialize (Buffer::Iterator start)
     throw new DataException ();
 
   i.ReadU16 (); // length
+
+  m_data->SetPushTag (i.ReadU8 ());
 
   uint32_t signatureLength = i.ReadU16 ();
   if (signatureLength == 6)
