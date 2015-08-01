@@ -13,7 +13,8 @@ redir = {'./ns-3/scratch' : '../ns-3/scratch' , \
 		 './ns-3/src/ndnSIM/apps' : '../ns-3/src/ndnSIM/apps' , \
 		 './ns-3/src/ndnSIM/utils/tracers' : '../ns-3/src/ndnSIM/utils/tracers' , \
 		 './ns-3/src/ndnSIM/model/fw' : '../ns-3/src/ndnSIM/model/fw' , \
-		 './ns-3/src/ndnSIM/model/spit' : '../ns-3/src/ndnSIM/model/spit'
+		 './ns-3/src/ndnSIM/model/spit' : '../ns-3/src/ndnSIM/model/spit' , \
+		 './ns-3/src/ndnSIM/model/wire' : '../ns-3/src/ndnSIM/model/wire'
 		}
 
 refile = {'./ns-3/src/ndnSIM/wscript' : '../ns-3/src/ndnSIM/wscript' , \

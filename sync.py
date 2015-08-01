@@ -13,7 +13,8 @@ syndir = {'../ns-3/scratch' : './ns-3/scratch' , \
 		  '../ns-3/src/ndnSIM/apps' : './ns-3/src/ndnSIM/apps' , \
 		  '../ns-3/src/ndnSIM/utils/tracers' : './ns-3/src/ndnSIM/utils/tracers' , \
 		  '../ns-3/src/ndnSIM/model/fw' : './ns-3/src/ndnSIM/model/fw' , \
-		  '../ns-3/src/ndnSIM/model/spit' : './ns-3/src/ndnSIM/model/spit'
+		  '../ns-3/src/ndnSIM/model/spit' : './ns-3/src/ndnSIM/model/spit' , \
+		  '../ns-3/src/ndnSIM/model/wire' : './ns-3/src/ndnSIM/model/wire'
 		  }
 
 # synfile = {'src':'dis'}   this files are synchronized by file
