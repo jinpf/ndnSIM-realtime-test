@@ -150,7 +150,7 @@ ConsumerP::SendSubscribePacket ()
     
   } else if (interest->GetPushTag() == Interest::PULL_INTEREST) {
 
-    std::cout << "[consumer]:send pull interest?" << std::endl;
+    std::cout << "[consumer]send pull interest" << std::endl;
 
   }
 
@@ -201,6 +201,17 @@ ConsumerP::OnData (Ptr<const Data> data)
 
   uint32_t seq = data->GetName ().get (-1).toSeqNum ();
   NS_LOG_INFO ("< DATA for " << seq);
+
+  if (data->GetPushTag() == Data::PUSH_DATA) {
+
+    std::cout << "[consumer]recive push data: " << seq << std::endl;
+    
+  } else if (data->GetPushTag() == Data::PULL_DATA) {
+
+    std::cout << "[consumer]recive pull data: " << seq << std::endl;
+
+  }
+  
 }
 
 void

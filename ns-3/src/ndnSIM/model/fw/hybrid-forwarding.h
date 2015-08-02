@@ -51,6 +51,10 @@ public:
   OnInterest (Ptr<Face> face,
               Ptr<Interest> interest);
 
+  void
+  OnData (Ptr<Face> face,
+          Ptr<Data> data);
+
 protected:
   static LogComponent g_log;
 };

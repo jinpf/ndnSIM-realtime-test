@@ -22,6 +22,7 @@
 #include "hybrid-forwarding.h"
 
 #include "ns3/ndn-interest.h"
+#include "ns3/ndn-data.h"
 #include "ns3/ndn-pit.h"
 #include "ns3/ndn-pit-entry.h"
 
@@ -78,16 +79,25 @@ HybridForwording::OnInterest (Ptr<Face> face,
 
   super::OnInterest(face, interest);
 
-  if (interest->GetPushTag() == Interest::PUSH_SUB_INTEREST) {
+}
 
-    std::cout << "[forwarder]send subscribe interest" << std::endl;
 
-    
-  } else if (interest->GetPushTag() == Interest::PULL_INTEREST) {
+void
+HybridForwording::OnData (Ptr<Face> face,
+                          Ptr<Data> data)
+{
+  uint32_t seq = data->GetName ().get (-1).toSeqNum ();
 
-    std::cout << "[forwarder]send pull interest" << std::endl;
+  if (data->GetPushTag() == Data::PUSH_DATA) {
 
+    std::cout << "[forwarder]recive push data: " << seq << std::endl;
+
+  } else if (data->GetPushTag() == Data::PULL_DATA) {
+
+    std::cout << "[forwarder]recive pull data: " << seq << std::endl;
   }
+
+  super::OnData(face,data);
 
 }
 

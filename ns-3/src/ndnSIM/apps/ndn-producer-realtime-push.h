@@ -55,14 +55,15 @@ public:
 
   // senddata with seq
   void
-  SendData(const uint32_t &seq);
+  SendData(const uint32_t &seq, bool subscribe);
 
 protected:
   // inherited from Application base class.
 
   uint32_t        m_seq;  // currently generated sequence number
   uint32_t        m_seqMax;    // maximum number of sequence number
-  double m_frequency;  // frequency of data packet gererating in 1 second
+  bool            m_subscribe;
+  double          m_frequency;  // frequency of data packet gererating in 1 second
   RandomVariable *m_random;  // random
   std::string m_randomType; //  random type: uniform or exponential
   EventId m_generateEvent; // EventId of generate data event

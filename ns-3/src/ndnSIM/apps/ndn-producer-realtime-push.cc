@@ -102,6 +102,7 @@ ProducerP::GetTypeId (void)
 
 ProducerP::ProducerP ()
   : m_seq (0)
+  , m_subscribe(false)
   , m_frequency (1.0)
   , m_random (0)
 {
@@ -163,26 +164,26 @@ ProducerP::OnInterest (Ptr<const Interest> interest)
 
     std::cout << "[producer]receive subscribe information" << std::endl;
 
+    m_subscribe = true;
+
     
   } else if (interest->GetPushTag() == Interest::PULL_INTEREST) {
 
-    std::cout << "[producer]:pull?" << std::endl;
+    Name dataName(interest->GetName());
+    uint32_t seq = dataName.get(-1).toSeqNum();
 
-    // Name dataName(interest->GetName());
-    // uint32_t seq = dataName.get(-1).toSeqNum();
+    std::cout << "[producer]receive comsumer request: " << seq ;
 
-    // std::cout << "[producer]receive comsumer request: " << seq ;
+    // record in file
+    m_PacketRecord(this, interest->GetName().toUri(), seq, "P_Interest", 0, 
+                   0, 0, Time(0));
 
-    // // record in file
-    // m_PacketRecord(this, interest->GetName().toUri(), seq, "P_Interest", 0, 
-    //                0, 0, Time(0));
+    if ( seq > m_seq ) {
+      std::cout << "  but i don`t have..." << std::endl;
+      return;
+    }
 
-    // if ( seq > m_seq ) {
-    //   std::cout << "  but i don`t have..." << std::endl;
-    //   return;
-    // }
-
-    // SendData(seq);
+    SendData(seq,false);
 
   }
 
@@ -190,12 +191,14 @@ ProducerP::OnInterest (Ptr<const Interest> interest)
 
 // send data with given seq
 void
-ProducerP::SendData(const uint32_t &seq)
+ProducerP::SendData(const uint32_t &seq, bool push)
 {
   Ptr<Name> dataName = Create<Name> (m_prefix);
   dataName->appendSeqNum (seq);
   Ptr<Data> data = Create<Data> (Create<Packet> (m_virtualPayloadSize));
   data->SetName (dataName);
+  if (push)
+    data->SetPushTag(Data::PUSH_DATA);
   data->SetFreshness (m_freshness);
   data->SetTimestamp (Simulator::Now());
 
@@ -214,7 +217,7 @@ ProducerP::SendData(const uint32_t &seq)
   m_PacketRecord(this, dataName->toUri(), seq, "P_Data", 0, 
                  0, 0, Time(0));
 
-  std::cout << "  send data  " << seq << std::endl;
+  std::cout << "[producer]send data: " << seq << std::endl;
 }
 
 // Attention! not really generate data, just add seq number pretend to generate data
@@ -232,6 +235,9 @@ ProducerP::GenerateData()
     // record in file
     m_PacketRecord(this, dataName->toUri(), m_seq, "P_GData", 0, 
                    0, 0, Time(0));
+
+    if (m_subscribe)
+      SendData(m_seq, true);
 
     // schedule to generate next data
     ScheduleNextData();
