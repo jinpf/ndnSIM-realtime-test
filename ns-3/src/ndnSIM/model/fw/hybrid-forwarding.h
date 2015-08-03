@@ -48,12 +48,20 @@ public:
   ~HybridForwording ();
 
   void
-  OnInterest (Ptr<Face> face,
+  OnInterest (Ptr<Face> inFace,
               Ptr<Interest> interest);
 
   void
-  OnData (Ptr<Face> face,
+  OnSubscribe (Ptr<Face> inFace,
+               Ptr<Interest> interest);
+
+  void
+  OnData (Ptr<Face> inFace,
           Ptr<Data> data);
+
+  void
+  OnPushData (Ptr<Face> inFace,
+              Ptr<Data> data);
 
 protected:
   static LogComponent g_log;

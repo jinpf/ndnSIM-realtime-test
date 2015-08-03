@@ -15,8 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Author:  Alexander Afanasyev <alexander.afanasyev@ucla.edu>
- *          Ilya Moiseenko <iliamo@cs.ucla.edu>
+ * Author:  Jin Pengfei <jinpengfei@cstnet.cn>
  */
 
 #include "hybrid-forwarding.h"
@@ -63,45 +62,107 @@ HybridForwording::~HybridForwording ()
 }
 
 void
-HybridForwording::OnInterest (Ptr<Face> face,
+HybridForwording::OnInterest (Ptr<Face> inFace,
                               Ptr<Interest> interest)
 {
   if (interest->GetPushTag() == Interest::PUSH_SUB_INTEREST) {
+    // std::cout << "[forwarder]receive subscribe interest" << std::endl;
+    OnSubscribe(inFace,interest);
 
-    std::cout << "[forwarder]receive subscribe interest" << std::endl;
-
-    
   } else if (interest->GetPushTag() == Interest::PULL_INTEREST) {
-
-    std::cout << "[forwarder]receive pull interest" << std::endl;
-
+    // std::cout << "[forwarder]receive pull interest" << std::endl;
+    super::OnInterest(inFace, interest);
   }
+  
+}
 
-  super::OnInterest(face, interest);
+void
+HybridForwording::OnSubscribe (Ptr<Face> inFace,
+                               Ptr<Interest> interest)
+{
+  NS_LOG_FUNCTION (inFace << interest->GetName ());
+  m_inInterests (interest, inFace);
 
+  Ptr<pit::Entry> pitEntry = m_pit->Lookup (*interest);
+  bool similarInterest = true;
+  if (pitEntry == 0)
+    {
+      similarInterest = false;
+      pitEntry = m_pit->Create (interest);
+      if (pitEntry != 0)
+        {
+          DidCreatePitEntry (inFace, interest, pitEntry);
+        }
+      else
+        {
+          FailedToCreatePitEntry (inFace, interest);
+          return;
+        }
+    }
+
+  bool isDuplicated = true;
+  if (!pitEntry->IsNonceSeen (interest->GetNonce ()))
+    {
+      pitEntry->AddSeenNonce (interest->GetNonce ());
+      isDuplicated = false;
+    }
+
+  if (isDuplicated)
+    {
+      DidReceiveDuplicateInterest (inFace, interest, pitEntry);
+      return;
+    }
+
+  if (similarInterest && ShouldSuppressIncomingInterest (inFace, interest, pitEntry))
+    {
+      pitEntry->AddIncoming (inFace/*, interest->GetInterestLifetime ()*/);
+      // update PIT entry lifetime
+      pitEntry->UpdateLifetime (interest->GetInterestLifetime ());
+
+      // Suppress this interest if we're still expecting data from some other face
+      NS_LOG_DEBUG ("Suppress interests");
+      m_dropInterests (interest, inFace);
+
+      DidSuppressSimilarInterest (inFace, interest, pitEntry);
+      return;
+    }
+
+  if (similarInterest)
+    {
+      pitEntry->AddIncoming (inFace);
+      // update PIT entry lifetime
+      pitEntry->UpdateLifetime (interest->GetInterestLifetime ());
+
+      DidForwardSimilarInterest (inFace, interest, pitEntry);
+    }
+
+  PropagateInterest (inFace, interest, pitEntry);
 }
 
 
 void
-HybridForwording::OnData (Ptr<Face> face,
+HybridForwording::OnData (Ptr<Face> inFace,
                           Ptr<Data> data)
 {
-  uint32_t seq = data->GetName ().get (-1).toSeqNum ();
-
   if (data->GetPushTag() == Data::PUSH_DATA) {
-
-    std::cout << "[forwarder]recive push data: " << seq << std::endl;
+    // uint32_t seq = data->GetName ().get (-1).toSeqNum ();
+    // std::cout << "[forwarder]recive push data: " << seq << std::endl;
+    OnPushData(inFace,data);
 
   } else if (data->GetPushTag() == Data::PULL_DATA) {
-
-    std::cout << "[forwarder]recive pull data: " << seq << std::endl;
+    // std::cout << "[forwarder]recive pull data: " << data->GetName().toUri() << std::endl;
+    super::OnData(inFace,data);
   }
 
-  super::OnData(face,data);
+}
+
+void
+HybridForwording::OnPushData (Ptr<Face> inFace,
+                              Ptr<Data> data)
+{
 
 }
 
 } // namespace fw
 } // namespace ndn
 } // namespace ns3
-
