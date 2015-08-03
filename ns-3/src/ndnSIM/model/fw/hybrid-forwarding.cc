@@ -153,6 +153,8 @@ HybridForwording::OnData (Ptr<Face> inFace,
   if (data->GetPushTag() == Data::PUSH_DATA) {
     // uint32_t seq = data->GetName ().get (-1).toSeqNum ();
     // std::cout << "[forwarder]recive push data: " << seq << std::endl;
+    // std::cout << "[forwarder]recive push data: " << data->GetName() << "  "<< data->GetName().getPrefix(data->GetName().size()-1) << std::endl;
+
     OnPushData(inFace,data);
 
   } else if (data->GetPushTag() == Data::PULL_DATA) {
@@ -170,7 +172,7 @@ HybridForwording::OnPushData (Ptr<Face> inFace,
   m_inData (data, inFace);
 
   // Lookup PIT entry
-  Ptr<pit::Entry> pitEntry = m_pit->Lookup (*data);
+  Ptr<pit::Entry> pitEntry = m_pit->Find (data->GetName().getPrefix(data->GetName().size()-1));
   if (pitEntry == 0)
     {
       bool cached = false;
@@ -198,32 +200,29 @@ HybridForwording::OnPushData (Ptr<Face> inFace,
       DidReceiveSolicitedData (inFace, data, cached);
     }
 
-    std::cout << "[forwarder] pit entry push tag: " << pitEntry->GetpushTag() << " seq: " 
-              << pitEntry->GetSeq() << std::endl; 
+    // std::cout << "[forwarder] pit entry push tag: " << pitEntry->GetpushTag() << " seq: " 
+    //           << pitEntry->GetSeq() << std::endl; 
 
-  // while (pitEntry != 0)
-  //   {
-  //     // Do data plane performance measurements
-  //     WillSatisfyPendingInterest (inFace, pitEntry);
+  if (pitEntry != 0 && pitEntry->GetpushTag())
+    {
+      // Do data plane performance measurements
+      WillSatisfyPendingInterest (inFace, pitEntry);
 
-  //     //satisfy all pending incoming Interests
-  //     BOOST_FOREACH (const pit::IncomingFace &incoming, pitEntry->GetIncoming ())
-  //     {
-  //       bool ok = incoming.m_face->SendData (data);
+      //satisfy all pending incoming Interests
+      BOOST_FOREACH (const pit::IncomingFace &incoming, pitEntry->GetIncoming ())
+      {
+        bool ok = incoming.m_face->SendData (data);
 
-  //       DidSendOutData (inFace, incoming.m_face, data, pitEntry);
-  //       NS_LOG_DEBUG ("Satisfy " << *incoming.m_face);
+        DidSendOutData (inFace, incoming.m_face, data, pitEntry);
+        NS_LOG_DEBUG ("Satisfy " << *incoming.m_face);
 
-  //       if (!ok)
-  //       {
-  //         m_dropData (data, incoming.m_face);
-  //         NS_LOG_DEBUG ("Cannot satisfy data to " << *incoming.m_face);
-  //       }
-  //     }
-
-  //     // Lookup another PIT entry
-  //     pitEntry = m_pit->Lookup (*data);
-  //   }
+        if (!ok)
+        {
+          m_dropData (data, incoming.m_face);
+          NS_LOG_DEBUG ("Cannot satisfy data to " << *incoming.m_face);
+        }
+      }
+    }
 }
 
 } // namespace fw
