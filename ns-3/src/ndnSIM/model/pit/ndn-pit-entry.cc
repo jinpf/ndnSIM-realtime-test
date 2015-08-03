@@ -47,6 +47,8 @@ Entry::Entry (Pit &container,
   , m_interest (header)
   , m_fibEntry (fibEntry)
   , m_maxRetxCount (0)
+  , m_pushTag(false)
+  , m_seq(0)
 {
   NS_LOG_FUNCTION (this);
 
@@ -98,6 +100,30 @@ const Time &
 Entry::GetExpireTime () const
 {
   return m_expireTime;
+}
+
+void
+Entry::SetpushTag()
+{
+  m_pushTag = true;
+}
+
+bool
+Entry::GetpushTag()
+{
+  return m_pushTag;
+}
+
+void
+Entry::SetSeq(uint32_t seq)
+{
+  m_seq = seq;
+}
+
+uint32_t
+Entry::GetSeq() const
+{
+  return m_seq;
 }
 
 bool

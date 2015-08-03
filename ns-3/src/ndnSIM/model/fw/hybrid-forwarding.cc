@@ -96,6 +96,7 @@ HybridForwording::OnSubscribe (Ptr<Face> inFace,
       pitEntry = m_pit->Create (interest);
       if (pitEntry != 0)
         {
+          pitEntry->SetpushTag();
           DidCreatePitEntry (inFace, interest, pitEntry);
         }
       else
@@ -196,6 +197,9 @@ HybridForwording::OnPushData (Ptr<Face> inFace,
       bool cached = m_contentStore->Add (data);
       DidReceiveSolicitedData (inFace, data, cached);
     }
+
+    std::cout << "[forwarder] pit entry push tag: " << pitEntry->GetpushTag() << " seq: " 
+              << pitEntry->GetSeq() << std::endl; 
 
   // while (pitEntry != 0)
   //   {

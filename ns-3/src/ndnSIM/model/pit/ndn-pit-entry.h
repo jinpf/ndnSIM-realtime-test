@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
+ *         Jin Pengfei <jinpengfei@cstnet.cn>
  */
 
 #ifndef _NDN_PIT_ENTRY_H_
@@ -113,6 +114,21 @@ public:
    */
   const Time &
   GetExpireTime () const;
+
+  // modify code 
+  // mark push pit
+  void
+  SetpushTag();
+
+  bool
+  GetpushTag();
+
+  //entry seq record
+  void
+  SetSeq(uint32_t seq);
+
+  uint32_t
+  GetSeq() const;
 
   /**
    * @brief Check if nonce `nonce` for the same prefix has already been seen
@@ -277,6 +293,10 @@ protected:
 
   Time m_lastRetransmission; ///< @brief Last time when number of retransmissions were increased
   uint32_t m_maxRetxCount;   ///< @brief Maximum allowed number of retransmissions via outgoing faces
+
+  //added code
+  bool m_pushTag;
+  uint32_t m_seq;
 
   std::list< boost::shared_ptr<fw::Tag> > m_fwTags; ///< @brief Forwarding strategy tags
 };
