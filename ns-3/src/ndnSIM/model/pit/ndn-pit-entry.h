@@ -16,19 +16,18 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
- *         Jin Pengfei <jinpengfei@cstnet.cn>
  */
 
-#ifndef _NDN_SPIT_ENTRY_H_
-#define _NDN_SPIT_ENTRY_H_
+#ifndef _NDN_PIT_ENTRY_H_
+#define _NDN_PIT_ENTRY_H_
 
 #include "ns3/ptr.h"
 #include "ns3/simple-ref-count.h"
 
 #include "ns3/ndn-fib.h"
 
-#include "ns3/ndn-spit-entry-incoming-face.h"
-#include "ns3/ndn-spit-entry-outgoing-face.h"
+#include "ns3/ndn-pit-entry-incoming-face.h"
+#include "ns3/ndn-pit-entry-outgoing-face.h"
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/tag.hpp>
@@ -43,15 +42,15 @@
 namespace ns3 {
 namespace ndn {
 
-class SPit;
+class Pit;
 
 namespace fw { class Tag; }
 
-namespace spit {
+namespace pit {
 
 /**
- * @ingroup ndn-spit
- * @brief structure for SPIT entry
+ * @ingroup ndn-pit
+ * @brief structure for PIT entry
  *
  * All set-methods are virtual, in case index rearrangement is necessary in the derived classes
  */
@@ -68,12 +67,12 @@ public:
   typedef std::set< uint32_t > nonce_container;  ///< @brief nonce container type
 
   /**
-   * \brief SPIT entry constructor
-   * \param prefix Prefix of the SPIT entry
-   * \param offsetTime Relative time to the current moment, representing SPIT entry lifetime
-   * \param fibEntry A FIB entry associated with the SPIT entry
+   * \brief PIT entry constructor
+   * \param prefix Prefix of the PIT entry
+   * \param offsetTime Relative time to the current moment, representing PIT entry lifetime
+   * \param fibEntry A FIB entry associated with the PIT entry
    */
-  Entry (SPit &container, Ptr<const Interest> header, Ptr<fib::Entry> fibEntry);
+  Entry (Pit &container, Ptr<const Interest> header, Ptr<fib::Entry> fibEntry);
 
   /**
    * @brief Virtual destructor
@@ -81,28 +80,28 @@ public:
   virtual ~Entry ();
 
   /**
-   * @brief Update lifetime of SPIT entry
+   * @brief Update lifetime of PIT entry
    *
-   * @param lifetime desired lifetime of the spit entry (relative to the Simulator::Now ())
+   * @param lifetime desired lifetime of the pit entry (relative to the Simulator::Now ())
    *
-   * This function will update SPIT entry lifetime to the maximum of the current lifetime and
+   * This function will update PIT entry lifetime to the maximum of the current lifetime and
    * the lifetime Simulator::Now () + lifetime
    */
   virtual void
   UpdateLifetime (const Time &lifetime);
 
   /**
-   * @brief Offset the currently set SPIT lifetime (allowed both negative and positive offsets)
+   * @brief Offset the currently set PIT lifetime (allowed both negative and positive offsets)
    *
-   * @param offsetTime positive or negative offset for the SPIT lifetime.
+   * @param offsetTime positive or negative offset for the PIT lifetime.
    *
-   * If SPIT expire time becomes less than Simulator::Now, then it is adjusted to Simulator::Now.
+   * If PIT expire time becomes less than Simulator::Now, then it is adjusted to Simulator::Now.
    */
   virtual void
   OffsetLifetime (const Time &offsetTime);
 
   /**
-   * @brief Get prefix of the SPIT entry
+   * @brief Get prefix of the PIT entry
    */
   const Name &
   GetPrefix () const;
@@ -114,13 +113,6 @@ public:
    */
   const Time &
   GetExpireTime () const;
-
-  // entry seq record
-  void
-  SetSeq(uint32_t seq);
-
-  uint32_t
-  GetSeq()const;
 
   /**
    * @brief Check if nonce `nonce` for the same prefix has already been seen
@@ -135,7 +127,7 @@ public:
    *
    * @param nonce nonce to add to the list of seen nonces
    *
-   * All nonces are stored for the lifetime of the SPIT entry
+   * All nonces are stored for the lifetime of the PIT entry
    */
   virtual void
   AddSeenNonce (uint32_t nonce);
@@ -272,21 +264,19 @@ private:
   friend std::ostream& operator<< (std::ostream& os, const Entry &entry);
 
 protected:
-  SPit &m_container; ///< @brief Reference to the container (to rearrange indexes, if necessary)
+  Pit &m_container; ///< @brief Reference to the container (to rearrange indexes, if necessary)
 
-  Ptr<const Interest> m_interest; ///< \brief Interest of the SPIT entry (if several interests are received, then nonce is from the first Interest)
+  Ptr<const Interest> m_interest; ///< \brief Interest of the PIT entry (if several interests are received, then nonce is from the first Interest)
   Ptr<fib::Entry> m_fibEntry;     ///< \brief FIB entry related to this prefix
 
   nonce_container m_seenNonces;  ///< \brief map of nonces that were seen for this prefix
   in_container  m_incoming;      ///< \brief container for incoming interests
   out_container m_outgoing;      ///< \brief container for outgoing interests
 
-  Time m_expireTime;         ///< \brief Time when SPIT entry will be removed
+  Time m_expireTime;         ///< \brief Time when PIT entry will be removed
 
   Time m_lastRetransmission; ///< @brief Last time when number of retransmissions were increased
   uint32_t m_maxRetxCount;   ///< @brief Maximum allowed number of retransmissions via outgoing faces
-
-  uint32_t m_seq; // latest seq number
 
   std::list< boost::shared_ptr<fw::Tag> > m_fwTags; ///< @brief Forwarding strategy tags
 };
@@ -370,8 +360,8 @@ Entry::RemoveFwTag ()
 }
 
 
-} // namespace spit
+} // namespace pit
 } // namespace ndn
 } // namespace ns3
 
-#endif // _NDN_SPIT_ENTRY_H_
+#endif // _NDN_PIT_ENTRY_H_

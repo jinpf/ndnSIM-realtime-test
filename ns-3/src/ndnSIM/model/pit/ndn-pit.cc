@@ -16,10 +16,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
- *         Jin Pengfei <jinpengfei@cstnet.cn>
  */
 
-#include "ndn-spit.h"
+#include "ndn-pit.h"
 
 #include "ns3/ndn-interest.h"
 #include "ns3/ndn-data.h"
@@ -33,42 +32,42 @@
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 
-NS_LOG_COMPONENT_DEFINE ("ndn.SPit");
+NS_LOG_COMPONENT_DEFINE ("ndn.Pit");
 
 namespace ns3 {
 namespace ndn {
 
-NS_OBJECT_ENSURE_REGISTERED (SPit);
+NS_OBJECT_ENSURE_REGISTERED (Pit);
 
 TypeId
-SPit::GetTypeId ()
+Pit::GetTypeId ()
 {
-  static TypeId tid = TypeId ("ns3::ndn::SPit")
+  static TypeId tid = TypeId ("ns3::ndn::Pit")
     .SetGroupName ("Ndn")
     .SetParent<Object> ()
 
-    .AddAttribute ("SPitEntryPruningTimout",
-                   "Timeout for SPIT entry to live after being satisfied. To make sure recently satisfied interest will not be satisfied again",
-                   TimeValue (), // by default, SPIT entries are removed instantly
-                   MakeTimeAccessor (&SPit::m_SPitEntryPruningTimout),
+    .AddAttribute ("PitEntryPruningTimout",
+                   "Timeout for PIT entry to live after being satisfied. To make sure recently satisfied interest will not be satisfied again",
+                   TimeValue (), // by default, PIT entries are removed instantly
+                   MakeTimeAccessor (&Pit::m_PitEntryPruningTimout),
                    MakeTimeChecker ())
 
-    .AddAttribute ("MaxSPitEntryLifetime",
-                   "Maximum amount of time for which a router is willing to maintain a SPIT entry. "
-                   "Actual SPIT lifetime should be minimum of MaxSPitEntryLifetime and InterestLifetime specified in the Interest packet",
-                   TimeValue (), // by default, SPIT entries are kept for the time, specified by the InterestLifetime
-                   MakeTimeAccessor (&SPit::GetMaxSPitEntryLifetime, &SPit::SetMaxSPitEntryLifetime),
+    .AddAttribute ("MaxPitEntryLifetime",
+                   "Maximum amount of time for which a router is willing to maintain a PIT entry. "
+                   "Actual PIT lifetime should be minimum of MaxPitEntryLifetime and InterestLifetime specified in the Interest packet",
+                   TimeValue (), // by default, PIT entries are kept for the time, specified by the InterestLifetime
+                   MakeTimeAccessor (&Pit::GetMaxPitEntryLifetime, &Pit::SetMaxPitEntryLifetime),
                    MakeTimeChecker ())
     ;
 
   return tid;
 }
 
-SPit::SPit ()
+Pit::Pit ()
 {
 }
 
-SPit::~SPit ()
+Pit::~Pit ()
 {
 }
 

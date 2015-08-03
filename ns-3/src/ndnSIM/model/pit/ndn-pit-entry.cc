@@ -16,12 +16,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
- *         Jin Pengfei <jinpengfei@cstnet.cn>
  */
 
-#include "ndn-spit-entry.h"
+#include "ndn-pit-entry.h"
 
-#include "ns3/ndn-spit.h"
+#include "ns3/ndn-pit.h"
 #include "ns3/ndn-fib.h"
 #include "ns3/ndn-name.h"
 #include "ns3/ndn-interest.h"
@@ -35,20 +34,19 @@
 #include <boost/foreach.hpp>
 namespace ll = boost::lambda;
 
-NS_LOG_COMPONENT_DEFINE ("ndn.spit.Entry");
+NS_LOG_COMPONENT_DEFINE ("ndn.pit.Entry");
 
 namespace ns3 {
 namespace ndn {
-namespace spit {
+namespace pit {
 
-Entry::Entry (SPit &container,
+Entry::Entry (Pit &container,
               Ptr<const Interest> header,
               Ptr<fib::Entry> fibEntry)
   : m_container (container)
   , m_interest (header)
   , m_fibEntry (fibEntry)
   , m_maxRetxCount (0)
-  , m_seq (0)
 {
   NS_LOG_FUNCTION (this);
 
@@ -69,9 +67,9 @@ Entry::UpdateLifetime (const Time &offsetTime)
 {
   NS_LOG_FUNCTION (this);
 
-  Time newExpireTime = Simulator::Now () + (m_container.GetMaxSPitEntryLifetime ().IsZero () ?
+  Time newExpireTime = Simulator::Now () + (m_container.GetMaxPitEntryLifetime ().IsZero () ?
                                             offsetTime :
-                                            std::min (m_container.GetMaxSPitEntryLifetime (), offsetTime));
+                                            std::min (m_container.GetMaxPitEntryLifetime (), offsetTime));
   if (newExpireTime > m_expireTime)
     m_expireTime = newExpireTime;
 
@@ -94,18 +92,6 @@ const Name &
 Entry::GetPrefix () const
 {
   return m_interest->GetName ();
-}
-
-void
-Entry::SetSeq(uint32_t seq)
-{
-  m_seq = seq;
-}
-
-uint32_t
-Entry::GetSeq()const
-{
-  return m_seq;
 }
 
 const Time &
@@ -327,6 +313,6 @@ std::ostream& operator<< (std::ostream& os, const Entry &entry)
 }
 
 
-} // namespace spit
+} // namespace pit
 } // namespace ndn
 } // namespace ns3

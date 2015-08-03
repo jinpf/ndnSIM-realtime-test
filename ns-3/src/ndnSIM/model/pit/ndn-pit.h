@@ -16,31 +16,30 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
- *         Jin Pengfei <jinpengfei@cstnet.cn>
  */
 
-#ifndef _NDN_SPIT_H_
-#define	_NDN_SPIT_H_
+#ifndef _NDN_PIT_H_
+#define	_NDN_PIT_H_
 
 #include "ns3/object.h"
 #include "ns3/nstime.h"
 #include "ns3/event-id.h"
 
-#include "ndn-spit-entry.h"
+#include "ndn-pit-entry.h"
 
 namespace ns3 {
 namespace ndn {
 
 /**
  * @ingroup ndn
- * @defgroup ndn-spit SPIT
+ * @defgroup ndn-pit PIT
  */
 
 /**
- * @ingroup ndn-spit
- * @brief Namespace for SPIT operations
+ * @ingroup ndn-pit
+ * @brief Namespace for PIT operations
  */
-namespace spit {
+namespace pit {
 }
 
 class L3Protocol;
@@ -55,10 +54,10 @@ typedef Data DataHeader;
 ////////////////////////////////////////////////////////////////////////
 
 /**
- * @ingroup ndn-spit
+ * @ingroup ndn-pit
  * @brief Class implementing Pending Interests Table
  */
-class SPit : public Object
+class Pit : public Object
 {
 public:
   /**
@@ -69,70 +68,70 @@ public:
   static TypeId GetTypeId ();
 
   /**
-   * \brief SPIT constructor
+   * \brief PIT constructor
    */
-  SPit ();
+  Pit ();
 
   /**
    * \brief Destructor
    */
-  virtual ~SPit ();
+  virtual ~Pit ();
 
   /**
-   * \brief Find corresponding SPIT entry for the given content name
+   * \brief Find corresponding PIT entry for the given content name
    *
    * Not that this call should be repeated enough times until it return 0.
    * This way all records with shorter or equal prefix as in content object will be found
    * and satisfied.
    *
    * \param prefix Prefix for which to lookup the entry
-   * \returns smart pointer to SPIT entry. If record not found,
+   * \returns smart pointer to PIT entry. If record not found,
    *          returns 0
    */
-  virtual Ptr<spit::Entry>
+  virtual Ptr<pit::Entry>
   Lookup (const Data &header) = 0;
 
   /**
-   * \brief Find a SPIT entry for the given content interest
+   * \brief Find a PIT entry for the given content interest
    * \param header parsed interest header
-   * \returns iterator to SPit entry. If record not found,
+   * \returns iterator to Pit entry. If record not found,
    *          return end() iterator
    */
-  virtual Ptr<spit::Entry>
+  virtual Ptr<pit::Entry>
   Lookup (const Interest &header) = 0;
 
   /**
-   * @brief Get SPIT entry for the prefix (exact match)
+   * @brief Get PIT entry for the prefix (exact match)
    *
-   * @param prefix Name for SPIT entry
-   * @returns If entry is found, a valid iterator (Ptr<spit::Entry>) will be returned. Otherwise End () (==0)
+   * @param prefix Name for PIT entry
+   * @returns If entry is found, a valid iterator (Ptr<pit::Entry>) will be returned. Otherwise End () (==0)
    */
-  virtual Ptr<spit::Entry>
+  virtual Ptr<pit::Entry>
   Find (const Name &prefix) = 0;
 
   /**
-   * @brief Creates a SPIT entry for the given interest
+   * @brief Creates a PIT entry for the given interest
    * @param header parsed interest header
-   * @returns iterator to SPit entry. If record could not be created (e.g., limit reached),
+   * @returns iterator to Pit entry. If record could not be created (e.g., limit reached),
    *          return end() iterator
    *
    * Note. This call assumes that the entry does not exist (i.e., there was a Lookup call before)
    */
-  virtual Ptr<spit::Entry>
+  virtual Ptr<pit::Entry>
   Create (Ptr<const Interest> header) = 0;
 
   /**
-   * @brief Mark SPIT entry deleted
-   * @param entry SPIT entry
+   * @brief Mark PIT entry deleted
+   * @param entry PIT entry
    *
    * Effectively, this method removes all incoming/outgoing faces and set
-   * lifetime +m_SPitEntryDefaultLifetime from Now ()
+   * lifetime +m_PitEntryDefaultLifetime from Now ()
    */
   virtual void
-  MarkErased (Ptr<spit::Entry> entry) = 0;
+  MarkErased (Ptr<pit::Entry> entry) = 0;
 
   /**
-   * @brief Print out SPIT contents for debugging purposes
+   * @brief Print out PIT contents for debugging purposes
    *
    * Note that there is no definite order in which entries are printed out
    */
@@ -140,7 +139,7 @@ public:
   Print (std::ostream &os) const = 0;
 
   /**
-   * @brief Get number of entries in SPIT
+   * @brief Get number of entries in PIT
    */
   virtual uint32_t
   GetSize () const = 0;
@@ -148,20 +147,20 @@ public:
   /**
    * @brief Return first element of FIB (no order guaranteed)
    */
-  virtual Ptr<spit::Entry>
+  virtual Ptr<pit::Entry>
   Begin () = 0;
 
   /**
    * @brief Return item next after last (no order guaranteed)
    */
-  virtual Ptr<spit::Entry>
+  virtual Ptr<pit::Entry>
   End () = 0;
 
   /**
    * @brief Advance the iterator
    */
-  virtual Ptr<spit::Entry>
-  Next (Ptr<spit::Entry>) = 0;
+  virtual Ptr<pit::Entry>
+  Next (Ptr<pit::Entry>) = 0;
 
   ////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
@@ -170,58 +169,58 @@ public:
   /**
    * @brief Static call to cheat python bindings
    */
-  static inline Ptr<SPit>
-  GetSPit (Ptr<Object> node);
+  static inline Ptr<Pit>
+  GetPit (Ptr<Object> node);
 
   /**
-   * @brief Get maximum SPIT entry lifetime
+   * @brief Get maximum PIT entry lifetime
    */
   inline const Time&
-  GetMaxSPitEntryLifetime () const;
+  GetMaxPitEntryLifetime () const;
 
   /**
-   * @brief Set maximum SPIT entry lifetime
+   * @brief Set maximum PIT entry lifetime
    */
   inline void
-  SetMaxSPitEntryLifetime (const Time &maxLifetime);
+  SetMaxPitEntryLifetime (const Time &maxLifetime);
 
 protected:
   // configuration variables. Check implementation of GetTypeId for more details
-  Time m_SPitEntryPruningTimout;
+  Time m_PitEntryPruningTimout;
 
-  Time m_maxSPitEntryLifetime;
+  Time m_maxPitEntryLifetime;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 inline std::ostream&
-operator<< (std::ostream& os, const SPit &spit)
+operator<< (std::ostream& os, const Pit &pit)
 {
-  spit.Print (os);
+  pit.Print (os);
   return os;
 }
 
-inline Ptr<SPit>
-SPit::GetSPit (Ptr<Object> node)
+inline Ptr<Pit>
+Pit::GetPit (Ptr<Object> node)
 {
-  return node->GetObject<SPit> ();
+  return node->GetObject<Pit> ();
 }
 
 inline const Time&
-SPit::GetMaxSPitEntryLifetime () const
+Pit::GetMaxPitEntryLifetime () const
 {
-  return m_maxSPitEntryLifetime;
+  return m_maxPitEntryLifetime;
 }
 
 inline void
-SPit::SetMaxSPitEntryLifetime (const Time &maxLifetime)
+Pit::SetMaxPitEntryLifetime (const Time &maxLifetime)
 {
-  m_maxSPitEntryLifetime = maxLifetime;
+  m_maxPitEntryLifetime = maxLifetime;
 }
 
 
 } // namespace ndn
 } // namespace ns3
 
-#endif	/* NDN_SPIT_H */
+#endif	/* NDN_PIT_H */

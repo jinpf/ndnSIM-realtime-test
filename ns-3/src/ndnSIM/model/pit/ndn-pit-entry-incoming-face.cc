@@ -16,16 +16,15 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
- *         Jin Pengfei <jinpengfei@cstnet.cn>
  */
 
-#include "ndn-spit-entry-incoming-face.h"
+#include "ndn-pit-entry-incoming-face.h"
 
 #include "ns3/simulator.h"
 
 namespace ns3 {
 namespace ndn {
-namespace spit {
+namespace pit {
 
 IncomingFace::IncomingFace (Ptr<Face> face)
   : m_face (face)
@@ -51,6 +50,6 @@ IncomingFace::operator = (const IncomingFace &other)
   return *this;
 }
 
-} // namespace spit
+} // namespace pit
 } // namespace ndn
 } // namespace ns3

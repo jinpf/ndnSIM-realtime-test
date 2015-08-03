@@ -25,8 +25,13 @@
 #include "ns3/ndn-pit.h"
 #include "ns3/ndn-pit-entry.h"
 
+#include "ns3/ndn-content-store.h"
+
+
 #include "ns3/assert.h"
 #include "ns3/log.h"
+
+#include <boost/foreach.hpp>
 
 namespace ns3 {
 namespace ndn {
@@ -160,7 +165,61 @@ void
 HybridForwording::OnPushData (Ptr<Face> inFace,
                               Ptr<Data> data)
 {
+  NS_LOG_FUNCTION (inFace << data->GetName ());
+  m_inData (data, inFace);
 
+  // Lookup PIT entry
+  Ptr<pit::Entry> pitEntry = m_pit->Lookup (*data);
+  if (pitEntry == 0)
+    {
+      bool cached = false;
+
+      if (m_cacheUnsolicitedData || (m_cacheUnsolicitedDataFromApps && (inFace->GetFlags () & Face::APPLICATION)))
+        {
+          // Optimistically add or update entry in the content store
+          cached = m_contentStore->Add (data);
+        }
+      else
+        {
+          // Drop data packet if PIT entry is not found
+          // (unsolicited data packets should not "poison" content store)
+
+          //drop dulicated or not requested data packet
+          m_dropData (data, inFace);
+        }
+
+      DidReceiveUnsolicitedData (inFace, data, cached);
+      return;
+    }
+  else
+    {
+      bool cached = m_contentStore->Add (data);
+      DidReceiveSolicitedData (inFace, data, cached);
+    }
+
+  // while (pitEntry != 0)
+  //   {
+  //     // Do data plane performance measurements
+  //     WillSatisfyPendingInterest (inFace, pitEntry);
+
+  //     //satisfy all pending incoming Interests
+  //     BOOST_FOREACH (const pit::IncomingFace &incoming, pitEntry->GetIncoming ())
+  //     {
+  //       bool ok = incoming.m_face->SendData (data);
+
+  //       DidSendOutData (inFace, incoming.m_face, data, pitEntry);
+  //       NS_LOG_DEBUG ("Satisfy " << *incoming.m_face);
+
+  //       if (!ok)
+  //       {
+  //         m_dropData (data, incoming.m_face);
+  //         NS_LOG_DEBUG ("Cannot satisfy data to " << *incoming.m_face);
+  //       }
+  //     }
+
+  //     // Lookup another PIT entry
+  //     pitEntry = m_pit->Lookup (*data);
+  //   }
 }
 
 } // namespace fw

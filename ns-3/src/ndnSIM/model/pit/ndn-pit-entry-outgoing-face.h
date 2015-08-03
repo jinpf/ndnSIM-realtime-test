@@ -16,11 +16,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
- *         Jin Pengfei <jinpengfei@cstnet.cn>
  */
 
-#ifndef _NDN_SPIT_ENTRY_OUTGOING_FACE_H_
-#define	_NDN_SPIT_ENTRY_OUTGOING_FACE_H_
+#ifndef _NDN_PIT_ENTRY_OUTGOING_FACE_H_
+#define	_NDN_PIT_ENTRY_OUTGOING_FACE_H_
 
 #include "ns3/nstime.h"
 #include "ns3/ptr.h"
@@ -29,11 +28,11 @@
 
 namespace ns3 {
 namespace ndn {
-namespace spit {
+namespace pit {
 
 /**
- * @ingroup ndn-spit
- * @brief SPIT state component for each outgoing interest
+ * @ingroup ndn-pit
+ * @brief PIT state component for each outgoing interest
  */
 struct OutgoingFace
 {
@@ -46,7 +45,7 @@ struct OutgoingFace
 	
 public:
   /**
-   * @brief Constructor to create SPitEntryOutgoingFace
+   * @brief Constructor to create PitEntryOutgoingFace
    * \param face face of the outgoing interest
    */
   OutgoingFace (Ptr<Face> face);
@@ -69,12 +68,12 @@ public:
   UpdateOnRetransmit ();
 
   /**
-   * @brief Compare to SPitEntryOutgoingFace
+   * @brief Compare to PitEntryOutgoingFace
    */
   bool operator== (const OutgoingFace &dst) { return *m_face==*dst.m_face; }
 
   /**
-   * @brief Compare SPitEntryOutgoingFace with Face
+   * @brief Compare PitEntryOutgoingFace with Face
    */
   bool operator== (Ptr<Face> face) { return *m_face==*face; }
 
@@ -85,8 +84,8 @@ public:
   operator< (const OutgoingFace &m) const { return *m_face < *(m.m_face); } // return identity of the face
 };
 
-} // namespace spit
+} // namespace pit
 } // namespace ndn
 } // namespace ns3
 
-#endif	/* NDN_SPIT_ENTRY_OUTGOING_FACE_H */
+#endif	/* NDN_PIT_ENTRY_OUTGOING_FACE_H */

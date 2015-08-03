@@ -16,11 +16,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Author: Alexander Afanasyev <alexander.afanasyev@ucla.edu>
- *         Jin Pengfei <jinpengfei@cstnet.cn>
  */
 
-#ifndef _NDN_SPIT_ENTRY_INCOMING_FACE_H_
-#define	_NDN_SPIT_ENTRY_INCOMING_FACE_H_
+#ifndef _NDN_PIT_ENTRY_INCOMING_FACE_H_
+#define	_NDN_PIT_ENTRY_INCOMING_FACE_H_
 
 #include "ns3/nstime.h"
 #include "ns3/ptr.h"
@@ -29,11 +28,11 @@
 
 namespace ns3 {
 namespace ndn {
-namespace spit {
+namespace pit {
 
 /**
- * @ingroup ndn-spit
- * @brief SPIT state component for each incoming interest (not including duplicates)
+ * @ingroup ndn-pit
+ * @brief PIT state component for each incoming interest (not including duplicates)
  */
 struct IncomingFace
 {
@@ -59,12 +58,12 @@ public:
   operator = (const IncomingFace &other);
 
   /**
-   * @brief Compare two SPitEntryIncomingFace
+   * @brief Compare two PitEntryIncomingFace
    */
   bool operator== (const IncomingFace &dst) const { return *m_face==*(dst.m_face); }
 
   /**
-   * @brief Compare SPitEntryIncomingFace with Face
+   * @brief Compare PitEntryIncomingFace with Face
    */
   bool operator== (Ptr<Face> face) const { return *m_face==*face; }
 
@@ -75,8 +74,8 @@ public:
   operator< (const IncomingFace &m) const { return *m_face < *(m.m_face); } // return identity of the face
 };
 
-} // namespace spit
+} // namespace pit
 } // namespace ndn
 } // namespace ns3
 
-#endif	/* NDN_SPIT_ENTRY_INCOMING_FACE_H */
+#endif	/* NDN_PIT_ENTRY_INCOMING_FACE_H */
