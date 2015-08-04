@@ -73,12 +73,8 @@ ConsumerP::GetTypeId (void)
                    MakeDoubleAccessor (&ConsumerP::m_frequency),
                    MakeDoubleChecker<double> ())
 
-
-    // .AddTraceSource ("LastRetransmittedInterestDataDelay", "Delay between last retransmitted Interest and received Data",
-    //                  MakeTraceSourceAccessor (&ConsumerP::m_lastRetransmittedInterestDataDelay))
-
-    // .AddTraceSource ("FirstInterestDataDelay", "Delay between first transmitted Interest and received Data",
-    //                  MakeTraceSourceAccessor (&ConsumerP::m_firstInterestDataDelay))
+    .AddTraceSource ("PacketRecord", "Record data send and receive in file",
+                     MakeTraceSourceAccessor (&ConsumerP::m_PacketRecord))
     ;
 
   return tid;
@@ -144,15 +140,14 @@ ConsumerP::SendSubscribePacket ()
   // std::cout << "[consumer]:Subscribe!" << std::endl;
 
   if (interest->GetPushTag() == Interest::PUSH_SUB_INTEREST) {
-
     std::cout << "[consumer]send subscribe interest" << std::endl;
-
-    
   } else if (interest->GetPushTag() == Interest::PULL_INTEREST) {
-
     std::cout << "[consumer]send pull interest" << std::endl;
-
   }
+
+  // record in file
+  m_PacketRecord(this, name->toUri(), m_seq, "C_Sub_Interest", 0, 
+                 0, 0, m_interestLifeTime);
 
   ScheduleNextPacket ();
 }
@@ -181,6 +176,12 @@ ConsumerP::SendPacket (const uint32_t &seq)
   m_transmittedInterests (interest, this, m_face);
   m_face->ReceiveInterest (interest);
 
+  std::cout << "[consumer]request: " << seq << std::endl;
+
+  // record in file
+  m_PacketRecord(this, nameWithSequence->toUri(), seq, "C_Pull_Interest", 0, 
+                 0, 0, m_interestLifeTime);
+
 }
 
 ///////////////////////////////////////////////////
@@ -202,16 +203,17 @@ ConsumerP::OnData (Ptr<const Data> data)
   uint32_t seq = data->GetName ().get (-1).toSeqNum ();
   NS_LOG_INFO ("< DATA for " << seq);
 
+  m_seq = seq;
+
   if (data->GetPushTag() == Data::PUSH_DATA) {
-
     std::cout << "[consumer]recive push data: " << seq << std::endl;
-    
   } else if (data->GetPushTag() == Data::PULL_DATA) {
-
     std::cout << "[consumer]recive pull data: " << seq << std::endl;
-
   }
-  
+
+  m_PacketRecord(this, data->GetName().toUri(), seq, "C_Data", 0, 
+                 0, 0, m_interestLifeTime);
+
 }
 
 void
@@ -220,6 +222,9 @@ ConsumerP::OnNack (Ptr<const Interest> interest)
   if (!m_active) return;
 
   App::OnNack (interest); // tracing inside
+
+  m_PacketRecord(this, interest->GetName().toUri(), 0, "C_NACK", 0, 
+                 0, 0, m_interestLifeTime);
 
   ScheduleNextPacket ();
 }
@@ -239,6 +244,7 @@ ConsumerP::ScheduleNextPacket ()
   else if (!m_sendEvent.IsRunning ())
     m_sendEvent = Simulator::Schedule (Seconds(1.0 / m_frequency),
                                        &ConsumerP::SendSubscribePacket, this);
+
 }
 
 

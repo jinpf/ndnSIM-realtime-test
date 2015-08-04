@@ -99,13 +99,10 @@ protected:
   Name            m_interestName;        ///< \brief NDN Name of the Interest (use Name)
   Time            m_interestLifeTime;    ///< \brief LifeTime for interest packet
 
-  // TracedCallback<Ptr<App> /* app */, uint32_t /* seqno */,
-  //                Time /* delay */, int32_t /*hop count*/> m_lastRetransmittedInterestDataDelay;
-  // TracedCallback<Ptr<App> /* app */, uint32_t /* seqno */,
-  //                Time /* delay */, uint32_t /*retx count*/,
-  //                int32_t /*hop count*/> m_firstInterestDataDelay;
+  // added to record information by using tracers
+  TracedCallback<Ptr<App> , std::string , uint32_t , std::string , uint32_t , int32_t , int32_t , Time>
+    m_PacketRecord;
 
-/// @endcond
 };
 
 } // namespace ndn

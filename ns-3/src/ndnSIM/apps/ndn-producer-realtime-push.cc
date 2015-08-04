@@ -166,6 +166,9 @@ ProducerP::OnInterest (Ptr<const Interest> interest)
 
     m_subscribe = true;
 
+    // record in file
+    m_PacketRecord(this, interest->GetName().toUri(), m_seq, "P_Sub_Interest", 0, 
+                   0, 0, interest->GetInterestLifetime());
     
   } else if (interest->GetPushTag() == Interest::PULL_INTEREST) {
 
@@ -175,8 +178,8 @@ ProducerP::OnInterest (Ptr<const Interest> interest)
     std::cout << "[producer]receive comsumer request: " << seq ;
 
     // record in file
-    m_PacketRecord(this, interest->GetName().toUri(), seq, "P_Interest", 0, 
-                   0, 0, Time(0));
+    m_PacketRecord(this, interest->GetName().toUri(), seq, "P_Pull_Interest", 0, 
+                   0, 0, interest->GetInterestLifetime());
 
     if ( seq > m_seq ) {
       std::cout << "  but i don`t have..." << std::endl;
@@ -214,8 +217,12 @@ ProducerP::SendData(const uint32_t &seq, bool push)
   m_transmittedDatas (data, this, m_face);
 
   // record in file
-  m_PacketRecord(this, dataName->toUri(), seq, "P_Data", 0, 
-                 0, 0, Time(0));
+  if (push)
+    m_PacketRecord(this, dataName->toUri(), seq, "P_Push_Data", 0, 
+                   0, 0, Time(0));
+  else
+    m_PacketRecord(this, dataName->toUri(), seq, "P_Pull_Data", 0, 
+                   0, 0, Time(0));
 
   std::cout << "[producer]send data: " << seq << std::endl;
 }

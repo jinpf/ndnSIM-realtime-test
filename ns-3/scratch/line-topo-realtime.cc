@@ -80,7 +80,7 @@ main (int argc, char *argv[])
 
   ndn::AppHelper producerHelper ("ns3::ndn::ProducerR");
   producerHelper.SetPrefix (prefix);
-  producerHelper.SetAttribute("Frequency", StringValue ("1")); // 100 data a second
+  producerHelper.SetAttribute("Frequency", StringValue ("10")); // 100 data a second
   producerHelper.SetAttribute ("PayloadSize", StringValue("1024"));
   producerHelper.SetAttribute("Randomize", StringValue ("exponential"));
   producerHelper.SetAttribute("MaxSeq", IntegerValue (100));
@@ -93,7 +93,7 @@ main (int argc, char *argv[])
   ndn::GlobalRoutingHelper::CalculateRoutes ();
 
   // add tracer to record in file
-  ndn::AppPacketTracer::InstallAll ("scratch/subdir/record/line-packet-record.txt");
+  ndn::AppPacketTracer::InstallAll ("scratch/subdir/record/line-pull-packet-record.txt");
 
   Simulator::Stop (Seconds (20.0));
 

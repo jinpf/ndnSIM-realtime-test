@@ -3,7 +3,7 @@
 # @Author: jinpf
 # @Date:   2015-07-24 22:14:06
 # @Last Modified by:   jinpf
-# @Last Modified time: 2015-07-27 09:10:02
+# @Last Modified time: 2015-08-04 14:41:07
 
 
 def read_calculate(fname):
@@ -44,6 +44,7 @@ def write_delay(fname,delay):
 			f.write(W_str)
 
 if __name__ == '__main__':
-	delay = read_calculate('line-packet-record.txt')
+	type = 'pull'
+	delay = read_calculate('line-'+type+'-packet-record.txt')
 	print ave_delay(delay)
-	write_delay('app_delay.txt',delay)
+	write_delay('app_'+type+'_delay.txt',delay)
