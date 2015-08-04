@@ -87,6 +87,9 @@ protected:
   virtual void
   ScheduleNextPacket ();
 
+  void
+  CheckGetLostData (const uint32_t &seq);
+
 protected:
   UniformVariable m_rand; ///< @brief nonce generator
 

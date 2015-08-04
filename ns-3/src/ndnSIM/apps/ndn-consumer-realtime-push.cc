@@ -203,8 +203,6 @@ ConsumerP::OnData (Ptr<const Data> data)
   uint32_t seq = data->GetName ().get (-1).toSeqNum ();
   NS_LOG_INFO ("< DATA for " << seq);
 
-  m_seq = seq;
-
   if (data->GetPushTag() == Data::PUSH_DATA) {
     std::cout << "[consumer]recive push data: " << seq << std::endl;
   } else if (data->GetPushTag() == Data::PULL_DATA) {
@@ -213,6 +211,10 @@ ConsumerP::OnData (Ptr<const Data> data)
 
   m_PacketRecord(this, data->GetName().toUri(), seq, "C_Data", 0, 
                  0, 0, m_interestLifeTime);
+
+  CheckGetLostData(seq);
+
+  m_seq = seq;
 
 }
 
@@ -244,7 +246,16 @@ ConsumerP::ScheduleNextPacket ()
   else if (!m_sendEvent.IsRunning ())
     m_sendEvent = Simulator::Schedule (Seconds(1.0 / m_frequency),
                                        &ConsumerP::SendSubscribePacket, this);
+}
 
+void
+ConsumerP::CheckGetLostData (const uint32_t &seq)
+{
+  if (seq - m_seq > 1)
+  {
+    for (uint32_t i=m_seq+1; i<seq; ++i)
+      SendPacket(i);
+  }
 }
 
 
