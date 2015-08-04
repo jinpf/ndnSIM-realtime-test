@@ -150,6 +150,9 @@ void
 HybridForwording::OnData (Ptr<Face> inFace,
                           Ptr<Data> data)
 {
+  NS_LOG_FUNCTION (inFace << data->GetName ());
+  m_inData (data, inFace);
+
   if (data->GetPushTag() == Data::PUSH_DATA) {
     // uint32_t seq = data->GetName ().get (-1).toSeqNum ();
     // std::cout << "[forwarder]recive push data: " << seq << std::endl;
@@ -159,7 +162,7 @@ HybridForwording::OnData (Ptr<Face> inFace,
 
   } else if (data->GetPushTag() == Data::PULL_DATA) {
     // std::cout << "[forwarder]recive pull data: " << data->GetName().toUri() << std::endl;
-    super::OnData(inFace,data);
+    OnPullData(inFace,data);
   }
 
 }
@@ -168,10 +171,7 @@ void
 HybridForwording::OnPushData (Ptr<Face> inFace,
                               Ptr<Data> data)
 {
-  NS_LOG_FUNCTION (inFace << data->GetName ());
-  m_inData (data, inFace);
-
-  // Lookup PIT entry
+  // Find PIT entry
   Ptr<pit::Entry> pitEntry = m_pit->Find (data->GetName().getPrefix(data->GetName().size()-1));
   if (pitEntry == 0)
     {
@@ -205,6 +205,14 @@ HybridForwording::OnPushData (Ptr<Face> inFace,
 
   if (pitEntry != 0 && pitEntry->GetpushTag())
     {
+      if (data->GetName().get(-1).toSeqNum() <= pitEntry->GetSeq())
+      {
+        super::OnData(inFace,data);
+        return;
+      }
+
+      pitEntry->SetSeq(data->GetName().get(-1).toSeqNum());
+
       // Do data plane performance measurements
       WillSatisfyPendingInterest (inFace, pitEntry);
 
@@ -222,6 +230,50 @@ HybridForwording::OnPushData (Ptr<Face> inFace,
           NS_LOG_DEBUG ("Cannot satisfy data to " << *incoming.m_face);
         }
       }
+    }
+}
+
+
+void
+HybridForwording::OnPullData (Ptr<Face> inFace,
+                              Ptr<Data> data)
+{
+  // Find PIT entry
+  Ptr<pit::Entry> pitEntry = m_pit->Find (data->GetName());
+  if (pitEntry == 0)
+    {
+      bool cached = false;
+
+      if (m_cacheUnsolicitedData || (m_cacheUnsolicitedDataFromApps && (inFace->GetFlags () & Face::APPLICATION)))
+        {
+          // Optimistically add or update entry in the content store
+          cached = m_contentStore->Add (data);
+        }
+      else
+        {
+          // Drop data packet if PIT entry is not found
+          // (unsolicited data packets should not "poison" content store)
+
+          //drop dulicated or not requested data packet
+          m_dropData (data, inFace);
+        }
+
+      DidReceiveUnsolicitedData (inFace, data, cached);
+      return;
+    }
+  else
+    {
+      bool cached = m_contentStore->Add (data);
+      DidReceiveSolicitedData (inFace, data, cached);
+    }
+
+  if (pitEntry != 0)
+    {
+      // Do data plane performance measurements
+      WillSatisfyPendingInterest (inFace, pitEntry);
+
+      // Actually satisfy pending interest
+      SatisfyPendingInterest (inFace, data, pitEntry);
     }
 }
 

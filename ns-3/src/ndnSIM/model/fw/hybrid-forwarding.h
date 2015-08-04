@@ -63,6 +63,10 @@ public:
   OnPushData (Ptr<Face> inFace,
               Ptr<Data> data);
 
+  void
+  OnPullData (Ptr<Face> inFace,
+              Ptr<Data> data);
+
 protected:
   static LogComponent g_log;
 };
