@@ -81,7 +81,7 @@ ConsumerR::GetTypeId (void)
                    MakeTimeChecker ())
 
     .AddAttribute ("Window", "window size",
-                   StringValue ("5"),
+                   StringValue ("1"),
                    MakeIntegerAccessor (&ConsumerR::GetWindow, &ConsumerR::SetWindow),
                    MakeIntegerChecker<int32_t> ())
 
@@ -165,6 +165,7 @@ ConsumerR::StopApplication () // Called at time specified by Stop
     if (it->second.retxEvent.IsRunning()) {
       it->second.retxEvent.Cancel();
       Simulator::Remove(it->second.retxEvent);
+      it++;
     } 
   }
 
