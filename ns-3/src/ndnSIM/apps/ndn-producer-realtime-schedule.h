@@ -94,9 +94,15 @@ private:
   Name m_keyLocator;
   std::string m_filename;
 
-  std::map <Time,uint32_t> m_schedule_data;
+  struct Time_Size {
+    Time time;
+    uint32_t size;
+  };
+
+  // m_schedule_data : {seq : time_size}
+  std::map <uint32_t,Time_Size> m_schedule_data;
   // 'm_time_value_it' is pair pointer, it->first: key, it->second: value
-  std::map <Time,uint32_t>::iterator m_time_value_it;
+  std::map <uint32_t,Time_Size>::iterator m_time_value_it;
   
 };
 

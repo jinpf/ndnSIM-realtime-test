@@ -82,7 +82,7 @@ main (int argc, char *argv[])
   producerHelper.SetPrefix (prefix);
   // producerHelper.SetAttribute("Frequency", StringValue ("10")); // 10 data a second
   producerHelper.SetAttribute ("PayloadSize", StringValue("1024"));
-  // producerHelper.SetAttribute("Randomize", StringValue ("exponential"));
+  producerHelper.SetAttribute("FileName", StringValue ("scratch/subdir/source_data/chat.txt"));
   // producerHelper.SetAttribute("MaxSeq", IntegerValue (100));
   producerHelper.Install (producer);
 

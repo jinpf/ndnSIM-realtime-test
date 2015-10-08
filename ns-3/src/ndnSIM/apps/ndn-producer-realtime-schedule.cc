@@ -125,6 +125,7 @@ ProducerS::StartApplication ()
   }
   std::string line;
   std::getline(indata,line);
+  uint32_t seq = 1;
   while (std::getline(indata,line)) {
     std::string a = "", b = "";
     bool flag = true;
@@ -138,18 +139,16 @@ ProducerS::StartApplication ()
       else
         b += line[i];
     }
-    int num = std::atoi(b.c_str());
-    m_schedule_data[Time(a)] = num;
+    a += "s";
+    m_schedule_data[seq].time = Time(a);
+    m_schedule_data[seq].size = std::atoi(b.c_str());
+    seq++;
   }
   indata.close();
 
   // m_schedule_data[Time("1s")] = 1024;
   // m_schedule_data[Time("2s")] = 1024;
   // m_schedule_data[Time("3s")] = 1024;
-  // m_schedule_data[Time("4s")] = 1024;
-  // m_schedule_data[Time("5s")] = 1024;
-  // m_schedule_data[Time("6s")] = 1024;
-  // m_schedule_data[Time("7s")] = 1024;
 
   m_time_value_it = m_schedule_data.begin();
 
@@ -233,7 +232,7 @@ ProducerS::SendData(const uint32_t &seq, bool push)
 {
   Ptr<Name> dataName = Create<Name> (m_prefix);
   dataName->appendSeqNum (seq);
-  Ptr<Data> data = Create<Data> (Create<Packet> (m_virtualPayloadSize));
+  Ptr<Data> data = Create<Data> (Create<Packet> (m_schedule_data[seq].size));
   data->SetName (dataName);
   if (push)
     data->SetPushTag(Data::PUSH_DATA);
@@ -290,9 +289,8 @@ void
 ProducerS::ScheduleNextData()
 {
   if (!m_generateEvent.IsRunning () && m_seq < m_seqMax && m_time_value_it != m_schedule_data.end()) {
-    m_virtualPayloadSize = m_time_value_it->second;
-    m_generateEvent = Simulator::Schedule (m_time_value_it->first.Compare(Simulator::Now()) >= 0 ?
-                                           m_time_value_it->first - Simulator::Now() : Seconds (0.0), 
+    m_generateEvent = Simulator::Schedule (m_time_value_it->second.time.Compare(Simulator::Now()) >= 0 ?
+                                           m_time_value_it->second.time - Simulator::Now() : Seconds (0.0), 
                                            &ProducerS::GenerateData, this);
     m_time_value_it++;
   }
