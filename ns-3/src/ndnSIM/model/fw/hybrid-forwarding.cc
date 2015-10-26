@@ -72,7 +72,7 @@ HybridForwording::OnInterest (Ptr<Face> inFace,
 {
   if (interest->GetPushTag() == Interest::PUSH_SUB_INTEREST) {
     // std::cout << "[forwarder]receive subscribe interest" << std::endl;
-    OnSubscribe(inFace,interest);
+    OnSubscribe(inFace,interest);    
 
   } else if (interest->GetPushTag() == Interest::PULL_INTEREST) {
     // std::cout << "[forwarder]receive pull interest" << std::endl;
@@ -160,6 +160,10 @@ HybridForwording::OnData (Ptr<Face> inFace,
 
     OnPushData(inFace,data);
 
+  } else if (data->GetPushTag() == Data::PUSH_SUB_ACK) {
+
+    OnPushAck(inFace,data);
+
   } else if (data->GetPushTag() == Data::PULL_DATA) {
     // std::cout << "[forwarder]recive pull data: " << data->GetName().toUri() << std::endl;
     OnPullData(inFace,data);
@@ -233,6 +237,65 @@ HybridForwording::OnPushData (Ptr<Face> inFace,
     }
 }
 
+void
+HybridForwording::OnPushAck(Ptr<Face> inFace,
+                              Ptr<Data> data)
+{
+  // Find PIT entry
+  Ptr<pit::Entry> pitEntry = m_pit->Find (data->GetName());
+  if (pitEntry == 0)
+    {
+      bool cached = false;
+
+      if (m_cacheUnsolicitedData || (m_cacheUnsolicitedDataFromApps && (inFace->GetFlags () & Face::APPLICATION)))
+        {
+          // Optimistically add or update entry in the content store
+          cached = m_contentStore->Add (data);
+        }
+      else
+        {
+          // Drop data packet if PIT entry is not found
+          // (unsolicited data packets should not "poison" content store)
+
+          //drop dulicated or not requested data packet
+          m_dropData (data, inFace);
+        }
+
+      DidReceiveUnsolicitedData (inFace, data, cached);
+      return;
+    }
+  else
+    {
+      bool cached = m_contentStore->Add (data);
+      DidReceiveSolicitedData (inFace, data, cached);
+    }
+
+    // std::cout << "[forwarder] pit entry push tag: " << pitEntry->GetpushTag() << " seq: " 
+    //           << pitEntry->GetSeq() << std::endl; 
+
+  if (pitEntry != 0 && pitEntry->GetpushTag())
+    {
+      pitEntry->SetSeq(data->GetPushSeq());
+
+      // Do data plane performance measurements
+      WillSatisfyPendingInterest (inFace, pitEntry);
+
+      //satisfy all pending incoming Interests
+      BOOST_FOREACH (const pit::IncomingFace &incoming, pitEntry->GetIncoming ())
+      {
+        bool ok = incoming.m_face->SendData (data);
+
+        DidSendOutData (inFace, incoming.m_face, data, pitEntry);
+        NS_LOG_DEBUG ("Satisfy " << *incoming.m_face);
+
+        if (!ok)
+        {
+          m_dropData (data, incoming.m_face);
+          NS_LOG_DEBUG ("Cannot satisfy data to " << *incoming.m_face);
+        }
+      }
+    }
+}
 
 void
 HybridForwording::OnPullData (Ptr<Face> inFace,

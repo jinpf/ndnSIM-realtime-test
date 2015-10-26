@@ -196,9 +196,13 @@ ProducerS::OnInterest (Ptr<const Interest> interest)
 
   if (interest->GetPushTag() == Interest::PUSH_SUB_INTEREST) {
 
-    std::cout << "[producer]receive subscribe information" << std::endl;
+    uint32_t seq = interest->GetPushSeq();
+
+    std::cout << "[producer]receive subscribe information, consumer seq = " << seq << std::endl;
 
     m_subscribe = true;
+
+    SendSubAck();
 
     // record in file
     m_PacketRecord(this, interest->GetName().toUri(), m_seq, "P_Sub_Interest", 0, 
@@ -226,6 +230,35 @@ ProducerS::OnInterest (Ptr<const Interest> interest)
 
 }
 
+void
+ProducerS::SendSubAck()
+{
+  Ptr<Name> dataName = Create<Name> (m_prefix);
+  Ptr<Data> data = Create<Data> (Create<Packet> (0));
+  data->SetName (dataName);
+  data->SetPushTag(Data::PUSH_SUB_ACK);
+  data->SetPushSeq(m_seq);
+  data->SetFreshness (m_freshness);
+  data->SetTimestamp (Simulator::Now());
+
+  data->SetSignature (m_signature);
+  if (m_keyLocator.size () > 0)
+  {
+    data->SetKeyLocator (Create<Name> (m_keyLocator));
+  }
+
+  NS_LOG_INFO ("node("<< GetNode()->GetId() <<") respodning with Data: " << data->GetName ());
+
+  m_face->ReceiveData (data);
+  m_transmittedDatas (data, this, m_face);
+
+  // record in file
+  m_PacketRecord(this, dataName->toUri(), m_seq, "P_Push_Ack", 0, 
+                   0, 0, Time(0));
+
+  std::cout << "[producer]send push ack: " << m_seq << std::endl;
+}
+
 // send data with given seq
 void
 ProducerS::SendData(const uint32_t &seq, bool push)
@@ -241,9 +274,9 @@ ProducerS::SendData(const uint32_t &seq, bool push)
 
   data->SetSignature (m_signature);
   if (m_keyLocator.size () > 0)
-    {
-      data->SetKeyLocator (Create<Name> (m_keyLocator));
-    }
+  {
+    data->SetKeyLocator (Create<Name> (m_keyLocator));
+  }
 
   NS_LOG_INFO ("node("<< GetNode()->GetId() <<") respodning with Data: " << data->GetName ());
 

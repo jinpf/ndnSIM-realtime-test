@@ -17,6 +17,7 @@
  *
  * Author: Ilya Moiseenko <iliamo@cs.ucla.edu>
  *         Alexander Afanasyev <alexander.afanasyev@ucla.edu>
+ *         Jin Pengfei <jinpengfei@cstnet.cn>
  */
 
 #include "ndn-data.h"
@@ -33,6 +34,7 @@ namespace ndn {
 Data::Data (Ptr<Packet> payload/* = Create<Packet> ()*/)
   : m_name (Create<Name> ())
   , m_pushTag (PULL_DATA)
+  , m_pushSeq (0)
   , m_signature (0)
   , m_payload (payload)
   , m_keyLocator (0)
@@ -47,6 +49,7 @@ Data::Data (Ptr<Packet> payload/* = Create<Packet> ()*/)
 Data::Data (const Data &other)
   : m_name (Create<Name> (other.GetName ()))
   , m_pushTag (other.GetPushTag())
+  , m_pushSeq (other.GetPushSeq())
   , m_freshness (other.GetFreshness ())
   , m_timestamp (other.GetTimestamp ())
   , m_signature (other.GetSignature ())
@@ -99,6 +102,18 @@ Data::GetPushTag () const
   return m_pushTag;
 }
 
+void
+Data::SetPushSeq (uint32_t seq)
+{
+  m_pushSeq = seq;
+  m_wire = 0;
+}
+
+uint32_t
+Data::GetPushSeq () const
+{
+  return m_pushSeq;
+}
 
 void
 Data::SetTimestamp (const Time &timestamp)

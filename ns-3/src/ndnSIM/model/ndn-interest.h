@@ -17,6 +17,7 @@
  *
  * Author: Ilya Moiseenko <iliamo@cs.ucla.edu>
  *         Alexander Afanasyev <alexander.afanasyev@ucla.edu>
+ *         Jin Pengfei <jinpengfei@cstnet.cn>
  */
 
 #ifndef _NDN_INTEREST_HEADER_H_
@@ -193,6 +194,12 @@ public:
   uint8_t
   GetPushTag () const;
 
+  void
+  SetPushSeq (uint32_t seq);
+
+  uint32_t
+  GetPushSeq () const;
+
   /**
    * @brief Set exclude filter of interest packet
    *
@@ -257,6 +264,8 @@ private:
 
   // push tag
   uint8_t m_pushTag;
+  // consumer side latest sequence
+  uint32_t m_pushSeq;
 
   Ptr<Exclude> m_exclude;   ///< @brief Exclude filter
   Ptr<Packet> m_payload;    ///< @brief virtual payload

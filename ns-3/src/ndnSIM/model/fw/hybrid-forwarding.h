@@ -64,6 +64,10 @@ public:
               Ptr<Data> data);
 
   void
+  OnPushAck (Ptr<Face> inFace,
+              Ptr<Data> data);
+
+  void
   OnPullData (Ptr<Face> inFace,
               Ptr<Data> data);
 

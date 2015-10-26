@@ -127,6 +127,7 @@ ConsumerP::SendSubscribePacket ()
   interest->SetName                (name);
   interest->SetInterestLifetime    (m_interestLifeTime);
   interest->SetPushTag             (Interest::PUSH_SUB_INTEREST);
+  interest->SetPushSeq             (m_seq);
 
   // NS_LOG_INFO ("Requesting Interest: \n" << *interest);
   NS_LOG_INFO ("> Subscribe Interest ");
@@ -140,7 +141,7 @@ ConsumerP::SendSubscribePacket ()
   // std::cout << "[consumer]:Subscribe!" << std::endl;
 
   if (interest->GetPushTag() == Interest::PUSH_SUB_INTEREST) {
-    std::cout << "[consumer]send subscribe interest" << std::endl;
+    std::cout << "[consumer]send subscribe interest, now seq = " << interest->GetPushSeq() << std::endl;
   } else if (interest->GetPushTag() == Interest::PULL_INTEREST) {
     std::cout << "[consumer]send pull interest" << std::endl;
   }
@@ -200,21 +201,29 @@ ConsumerP::OnData (Ptr<const Data> data)
 
   // NS_LOG_INFO ("Received content object: " << boost::cref(*data));
 
-  uint32_t seq = data->GetName ().get (-1).toSeqNum ();
-  NS_LOG_INFO ("< DATA for " << seq);
+  uint32_t seq;
+  
+  if (data->GetPushTag() == Data::PUSH_SUB_ACK) {
+    seq = data->GetPushSeq();
+    std::cout << "[consumer]recive sub ack, producer seq = " << seq << std::endl;
+    m_PacketRecord(this, data->GetName().toUri(), seq, "C_Push_Ack", 0, 
+                 0, 0, m_interestLifeTime);
+    CheckGetLostData(seq+1);
 
-  if (data->GetPushTag() == Data::PUSH_DATA) {
-    std::cout << "[consumer]recive push data: " << seq << std::endl;
-  } else if (data->GetPushTag() == Data::PULL_DATA) {
-    std::cout << "[consumer]recive pull data: " << seq << std::endl;
+  } else {
+    seq = data->GetName ().get (-1).toSeqNum ();
+    if (data->GetPushTag() == Data::PUSH_DATA) {
+      std::cout << "[consumer]recive push data: " << seq << std::endl;
+    } else if (data->GetPushTag() == Data::PULL_DATA) {
+      std::cout << "[consumer]recive pull data: " << seq << std::endl;
+    }
+    m_PacketRecord(this, data->GetName().toUri(), seq, "C_Data", 0, 
+                 0, 0, m_interestLifeTime);
+    CheckGetLostData(seq);
+    m_seq = seq;
   }
 
-  m_PacketRecord(this, data->GetName().toUri(), seq, "C_Data", 0, 
-                 0, 0, m_interestLifeTime);
-
-  CheckGetLostData(seq);
-
-  m_seq = seq;
+  NS_LOG_INFO ("< DATA for " << seq);
 
 }
 

@@ -17,6 +17,7 @@
  *
  * Author: Ilya Moiseenko <iliamo@cs.ucla.edu>
  *         Alexander Afanasyev <alexander.afanasyev@ucla.edu>
+ *         Jin Pengfei <jinpengfei@cstnet.cn>
  */
 
 #ifndef _NDN_CONTENT_OBJECT_HEADER_H_
@@ -93,6 +94,12 @@ public:
 
   uint8_t
   GetPushTag () const;
+
+  void
+  SetPushSeq (uint32_t seq);
+
+  uint32_t
+  GetPushSeq () const;
 
   /**
    * @brief Set content object timestamp
@@ -199,6 +206,8 @@ private:
 
   // push tag
   uint8_t m_pushTag;
+  // producer side latest sequence
+  uint32_t m_pushSeq;
 
   Time m_freshness;
   Time m_timestamp;

@@ -36,6 +36,7 @@ Interest::Interest (Ptr<Packet> payload/* = Create<Packet> ()*/)
   , m_nonce (0)
   , m_nackType (NORMAL_INTEREST)
   , m_pushTag (PULL_INTEREST)
+  , m_pushSeq (0)
   , m_exclude (0)
   , m_payload (payload)
   , m_wire (0)
@@ -53,6 +54,7 @@ Interest::Interest (const Interest &interest)
   , m_nonce            (interest.m_nonce)
   , m_nackType         (interest.m_nackType)
   , m_pushTag          (interest.GetPushTag())
+  , m_pushSeq          (interest.GetPushSeq())
   , m_exclude          (interest.m_exclude ? Create<Exclude> (*interest.GetExclude ()) : 0)
   , m_payload          (interest.GetPayload ()->Copy ())
   , m_wire             (0)
@@ -150,6 +152,19 @@ uint8_t
 Interest::GetPushTag () const
 {
   return m_pushTag;
+}
+
+void
+Interest::SetPushSeq (uint32_t seq)
+{
+  m_pushSeq = seq;
+  m_wire = 0;
+}
+
+uint32_t
+Interest::GetPushSeq () const
+{
+  return m_pushSeq;
 }
 
 void
