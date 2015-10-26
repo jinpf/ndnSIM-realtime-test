@@ -72,16 +72,16 @@ main (int argc, char *argv[])
   // Install NDN applications
   std::string prefix = "/prefix";
 
-  ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerR");
+  ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerP");
   consumerHelper.SetPrefix (prefix);
-  // consumerHelper.SetAttribute("LifeTime", StringValue ("2s"));
-  // consumerHelper.SetAttribute ("Frequency", StringValue ("0.5")); // 100 interests a second
+  consumerHelper.SetAttribute("LifeTime", StringValue ("60s"));
+  consumerHelper.SetAttribute ("Frequency", StringValue ("0.025")); //  interests a second
   consumerHelper.Install (consumerNodes);
 
   ndn::AppHelper producerHelper ("ns3::ndn::ProducerS");
   producerHelper.SetPrefix (prefix);
   // producerHelper.SetAttribute("Frequency", StringValue ("10")); // 10 data a second
-  producerHelper.SetAttribute ("PayloadSize", StringValue("1024"));
+  // producerHelper.SetAttribute ("PayloadSize", StringValue("1024"));
   producerHelper.SetAttribute("FileName", StringValue ("scratch/subdir/source_data/chat.txt"));
   // producerHelper.SetAttribute("MaxSeq", IntegerValue (100));
   producerHelper.Install (producer);
@@ -95,7 +95,7 @@ main (int argc, char *argv[])
   // add tracer to record in file
   ndn::AppPacketTracer::InstallAll ("scratch/subdir/record/line-schedule-packet-record.txt");
 
-  Simulator::Stop (Seconds (10.0));
+  Simulator::Stop (Seconds (20000.0));
 
   Simulator::Run ();
   Simulator::Destroy ();
