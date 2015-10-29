@@ -81,7 +81,7 @@ ConsumerR::GetTypeId (void)
                    MakeTimeChecker ())
 
     .AddAttribute ("Window", "window size",
-                   StringValue ("20"),
+                   StringValue ("3"),
                    MakeIntegerAccessor (&ConsumerR::GetWindow, &ConsumerR::SetWindow),
                    MakeIntegerChecker<int32_t> ())
 

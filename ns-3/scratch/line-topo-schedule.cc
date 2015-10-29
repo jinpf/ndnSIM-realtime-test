@@ -72,10 +72,10 @@ main (int argc, char *argv[])
   // Install NDN applications
   std::string prefix = "/prefix";
 
-  ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerP");
+  ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerR");
   consumerHelper.SetPrefix (prefix);
   consumerHelper.SetAttribute("LifeTime", StringValue ("60s"));
-  consumerHelper.SetAttribute ("Frequency", StringValue ("0.025")); //  interests a second
+  // consumerHelper.SetAttribute ("Frequency", StringValue ("0.025")); //  interests a second
   consumerHelper.Install (consumerNodes);
 
   ndn::AppHelper producerHelper ("ns3::ndn::ProducerS");
@@ -93,7 +93,7 @@ main (int argc, char *argv[])
   ndn::GlobalRoutingHelper::CalculateRoutes ();
 
   // add tracer to record in file
-  ndn::AppPacketTracer::InstallAll ("scratch/subdir/record/line-schedule-packet-record.txt");
+  ndn::AppPacketTracer::InstallAll ("scratch/subdir/record/line-window-packet-record.txt");
 
   Simulator::Stop (Seconds (20000.0));
 
