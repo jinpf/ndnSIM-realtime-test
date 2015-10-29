@@ -18,7 +18,7 @@
  * Author: Jin Pengfei <jinpengfei@cstnet.cn>
  */
 
-#include "ndn-producer-realtime-schedule.h"
+#include "ndn-producer-schedule-sync.h"
 #include "ns3/log.h"
 #include "ns3/ndn-interest.h"
 #include "ns3/ndn-data.h"
@@ -42,80 +42,77 @@
 
 namespace ll = boost::lambda;
 
-NS_LOG_COMPONENT_DEFINE ("ndn.ProducerS");
+NS_LOG_COMPONENT_DEFINE ("ndn.ProducerSS");
 
 namespace ns3 {
 namespace ndn {
 
-NS_OBJECT_ENSURE_REGISTERED (ProducerS);
+NS_OBJECT_ENSURE_REGISTERED (ProducerSS);
 
 TypeId
-ProducerS::GetTypeId (void)
+ProducerSS::GetTypeId (void)
 {
-  static TypeId tid = TypeId ("ns3::ndn::ProducerS")
+  static TypeId tid = TypeId ("ns3::ndn::ProducerSS")
     .SetGroupName ("Ndn")
     .SetParent<App> ()
-    .AddConstructor<ProducerS> ()
+    .AddConstructor<ProducerSS> ()
     .AddAttribute ("Prefix","Prefix, for which realtime producer has the data",
                    StringValue ("/"),
-                   MakeNameAccessor (&ProducerS::m_prefix),
+                   MakeNameAccessor (&ProducerSS::m_prefix),
                    MakeNameChecker ())
     // .AddAttribute ("Postfix", "Postfix that is added to the output data (e.g., for adding producer-uniqueness)",
     //                StringValue ("/"),
-    //                MakeNameAccessor (&ProducerS::m_postfix),
+    //                MakeNameAccessor (&ProducerSS::m_postfix),
     //                MakeNameChecker ())
     .AddAttribute ("PayloadSize", "Virtual payload size for Content packets",
                    UintegerValue (1024),
-                   MakeUintegerAccessor (&ProducerS::m_virtualPayloadSize),
+                   MakeUintegerAccessor (&ProducerSS::m_virtualPayloadSize),
                    MakeUintegerChecker<uint32_t> ())
     .AddAttribute ("Freshness", "Freshness of data packets, if 0, then unlimited freshness",
                    TimeValue (Seconds (0)),
-                   MakeTimeAccessor (&ProducerS::m_freshness),
+                   MakeTimeAccessor (&ProducerSS::m_freshness),
                    MakeTimeChecker ())
     .AddAttribute ("Signature", "Fake signature, 0 valid signature (default), other values application-specific",
                    UintegerValue (0),
-                   MakeUintegerAccessor (&ProducerS::m_signature),
+                   MakeUintegerAccessor (&ProducerSS::m_signature),
                    MakeUintegerChecker<uint32_t> ())
     .AddAttribute ("KeyLocator", "Name to be used for key locator.  If root, then key locator is not used",
                    NameValue (),
-                   MakeNameAccessor (&ProducerS::m_keyLocator),
+                   MakeNameAccessor (&ProducerSS::m_keyLocator),
                    MakeNameChecker ())
 
     .AddAttribute ("MaxSeq", "Max sequence number that can generate",
                    IntegerValue (1000),
-                   MakeIntegerAccessor(&ProducerS::m_seqMax),
+                   MakeIntegerAccessor(&ProducerSS::m_seqMax),
                    MakeIntegerChecker<int32_t>())
 
     .AddAttribute ("FileName", "load file name, from which to schedule generate packet",
                    StringValue ("scratch/subdir/source_data/test.txt"),
-                   MakeStringAccessor(&ProducerS::m_filename),
+                   MakeStringAccessor(&ProducerSS::m_filename),
                    MakeStringChecker ())
 
     .AddTraceSource ("PacketRecord", "Record data send and receive in file",
-                     MakeTraceSourceAccessor (&ProducerS::m_PacketRecord))
+                     MakeTraceSourceAccessor (&ProducerSS::m_PacketRecord))
 
     ;
   return tid;
 }
 
-ProducerS::ProducerS ()
+ProducerSS::ProducerSS ()
   : m_seq (0)
-  , m_subscribe(false)
 {
   // NS_LOG_FUNCTION_NOARGS ();
   m_seqMax = std::numeric_limits<uint32_t>::max ();
 
-
-
 }
 
-ProducerS::~ProducerS ()
+ProducerSS::~ProducerSS ()
 {
 }
 
 // inherited from Application base class.
 void
-ProducerS::StartApplication ()
+ProducerSS::StartApplication ()
 {
   // load schedule infomation from file
   std::ifstream indata(m_filename.c_str());
@@ -176,7 +173,7 @@ ProducerS::StartApplication ()
 }
 
 void
-ProducerS::StopApplication ()
+ProducerSS::StopApplication ()
 {
   NS_LOG_FUNCTION_NOARGS ();
   NS_ASSERT (GetNode ()->GetObject<Fib> () != 0);
@@ -186,7 +183,7 @@ ProducerS::StopApplication ()
 
 
 void
-ProducerS::OnInterest (Ptr<const Interest> interest)
+ProducerSS::OnInterest (Ptr<const Interest> interest)
 {
   App::OnInterest (interest); // tracing inside
 
@@ -198,14 +195,12 @@ ProducerS::OnInterest (Ptr<const Interest> interest)
 
     uint32_t seq = interest->GetPushSeq();
 
-    std::cout << "[producer]receive subscribe information, consumer seq = " << seq << std::endl;
+    std::cout << "[producer]receive sync information, consumer seq = " << seq << std::endl;
 
-    m_subscribe = true;
-
-    SendSubAck();
+    SendSyncAck();
 
     // record in file
-    m_PacketRecord(this, interest->GetName().toUri(), seq, "P_Sub_Interest", 0, 
+    m_PacketRecord(this, interest->GetName().toUri(), seq, "P_Sync_Interest", 0, 
                    0, 0, interest->GetInterestLifetime());
     
   } else if (interest->GetPushTag() == Interest::PULL_INTEREST) {
@@ -231,7 +226,7 @@ ProducerS::OnInterest (Ptr<const Interest> interest)
 }
 
 void
-ProducerS::SendSubAck()
+ProducerSS::SendSyncAck()
 {
   Ptr<Name> dataName = Create<Name> (m_prefix);
   Ptr<Data> data = Create<Data> (Create<Packet> (0));
@@ -253,15 +248,15 @@ ProducerS::SendSubAck()
   m_transmittedDatas (data, this, m_face);
 
   // record in file
-  m_PacketRecord(this, dataName->toUri(), m_seq, "P_Push_Ack", 0, 
+  m_PacketRecord(this, dataName->toUri(), m_seq, "P_Sync_Ack", 0, 
                    0, 0, Time(0));
 
-  std::cout << "[producer]send push ack: " << m_seq << std::endl;
+  std::cout << "[producer]send Sync ack: " << m_seq << std::endl;
 }
 
 // send data with given seq
 void
-ProducerS::SendData(const uint32_t &seq, bool push)
+ProducerSS::SendData(const uint32_t &seq, bool push)
 {
   Ptr<Name> dataName = Create<Name> (m_prefix);
   dataName->appendSeqNum (seq);
@@ -296,7 +291,7 @@ ProducerS::SendData(const uint32_t &seq, bool push)
 
 // Attention! not really generate data, just add seq number pretend to generate data
 void
-ProducerS::GenerateData()
+ProducerSS::GenerateData()
 {
   if (m_seq != std::numeric_limits<uint32_t>::max()) {
     // generate data and plus seq number
@@ -310,21 +305,18 @@ ProducerS::GenerateData()
     m_PacketRecord(this, dataName->toUri(), m_seq, "P_GData", 0, 
                    0, 0, Time(0));
 
-    if (m_subscribe)
-      SendData(m_seq, true);
-
     // schedule to generate next data
     ScheduleNextData();
   }
 }
 
 void
-ProducerS::ScheduleNextData()
+ProducerSS::ScheduleNextData()
 {
   if (!m_generateEvent.IsRunning () && m_seq < m_seqMax && m_time_value_it != m_schedule_data.end()) {
     m_generateEvent = Simulator::Schedule (m_time_value_it->second.time.Compare(Simulator::Now()) >= 0 ?
                                            m_time_value_it->second.time - Simulator::Now() : Seconds (0.0), 
-                                           &ProducerS::GenerateData, this);
+                                           &ProducerSS::GenerateData, this);
     m_time_value_it++;
   }
 }
