@@ -57,6 +57,9 @@ public:
   void
   SendData(const uint32_t &seq, bool subscribe);
 
+  void
+  SendSubAck();
+
 protected:
   // inherited from Application base class.
 

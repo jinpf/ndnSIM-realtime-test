@@ -150,7 +150,6 @@ ProducerP::StopApplication ()
   App::StopApplication ();
 }
 
-
 void
 ProducerP::OnInterest (Ptr<const Interest> interest)
 {
@@ -162,12 +161,16 @@ ProducerP::OnInterest (Ptr<const Interest> interest)
 
   if (interest->GetPushTag() == Interest::PUSH_SUB_INTEREST) {
 
-    std::cout << "[producer]receive subscribe information" << std::endl;
+    uint32_t seq = interest->GetPushSeq();
+
+    std::cout << "[producer]receive subscribe information, consumer seq = " << seq << std::endl;
 
     m_subscribe = true;
 
+    SendSubAck();
+
     // record in file
-    m_PacketRecord(this, interest->GetName().toUri(), m_seq, "P_Sub_Interest", 0, 
+    m_PacketRecord(this, interest->GetName().toUri(), seq, "P_Sub_Interest", 0, 
                    0, 0, interest->GetInterestLifetime());
     
   } else if (interest->GetPushTag() == Interest::PULL_INTEREST) {
@@ -175,14 +178,14 @@ ProducerP::OnInterest (Ptr<const Interest> interest)
     Name dataName(interest->GetName());
     uint32_t seq = dataName.get(-1).toSeqNum();
 
-    std::cout << "[producer]receive comsumer request: " << seq ;
+    std::cout << "[producer]receive comsumer request: " << seq << " ";
 
     // record in file
     m_PacketRecord(this, interest->GetName().toUri(), seq, "P_Pull_Interest", 0, 
                    0, 0, interest->GetInterestLifetime());
 
     if ( seq > m_seq ) {
-      std::cout << "  but i don`t have..." << std::endl;
+      std::cout << " but i don`t have..." << std::endl;
       return;
     }
 
@@ -191,6 +194,36 @@ ProducerP::OnInterest (Ptr<const Interest> interest)
   }
 
 }
+
+void
+ProducerP::SendSubAck()
+{
+  Ptr<Name> dataName = Create<Name> (m_prefix);
+  Ptr<Data> data = Create<Data> (Create<Packet> (0));
+  data->SetName (dataName);
+  data->SetPushTag(Data::PUSH_SUB_ACK);
+  data->SetPushSeq(m_seq);
+  data->SetFreshness (m_freshness);
+  data->SetTimestamp (Simulator::Now());
+
+  data->SetSignature (m_signature);
+  if (m_keyLocator.size () > 0)
+  {
+    data->SetKeyLocator (Create<Name> (m_keyLocator));
+  }
+
+  NS_LOG_INFO ("node("<< GetNode()->GetId() <<") respodning with Data: " << data->GetName ());
+
+  m_face->ReceiveData (data);
+  m_transmittedDatas (data, this, m_face);
+
+  // record in file
+  m_PacketRecord(this, dataName->toUri(), m_seq, "P_Push_Ack", 0, 
+                   0, 0, Time(0));
+
+  std::cout << "[producer]send push ack: " << m_seq << std::endl;
+}
+
 
 // send data with given seq
 void

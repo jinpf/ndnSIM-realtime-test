@@ -58,6 +58,7 @@ main (int argc, char *argv[])
   // Install NDN stack on all nodes
   ndn::StackHelper ndnHelper;
   ndnHelper.SetForwardingStrategy ("ns3::ndn::fw::HybridForwording");
+  ndnHelper.SetContentStore("ns3::ndn::cs::Nocache");
   ndnHelper.InstallAll ();
 
   // Installing global routing interface on all nodes
@@ -72,18 +73,19 @@ main (int argc, char *argv[])
   // Install NDN applications
   std::string prefix = "/prefix";
 
-  ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerR");
+  ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerP");
   consumerHelper.SetPrefix (prefix);
-  consumerHelper.SetAttribute("RetxTimer", StringValue ("500ms"));
-  // consumerHelper.SetAttribute ("Frequency", StringValue ("2")); // 100 interests a second
+  // consumerHelper.SetAttribute("RetxTimer", StringValue ("200ms"));
+  consumerHelper.SetAttribute("LifeTime", StringValue ("5000ms"));
+  consumerHelper.SetAttribute ("Frequency", StringValue ("5")); // 100 interests a second
   consumerHelper.Install (consumerNodes);
 
-  ndn::AppHelper producerHelper ("ns3::ndn::ProducerR");
+  ndn::AppHelper producerHelper ("ns3::ndn::ProducerP");
   producerHelper.SetPrefix (prefix);
-  producerHelper.SetAttribute("Frequency", StringValue ("10")); // 100 data a second
+  producerHelper.SetAttribute("Frequency", StringValue ("1")); // 100 data a second
   producerHelper.SetAttribute ("PayloadSize", StringValue("1024"));
   producerHelper.SetAttribute("Randomize", StringValue ("exponential"));
-  producerHelper.SetAttribute("MaxSeq", IntegerValue (100));
+  producerHelper.SetAttribute("MaxSeq", IntegerValue (1000));
   producerHelper.Install (producer);
 
   // Add /prefix origins to ndn::GlobalRouter
@@ -95,7 +97,7 @@ main (int argc, char *argv[])
   // add tracer to record in file
   ndn::AppPacketTracer::InstallAll ("scratch/subdir/record/line-pull-packet-record.txt");
 
-  Simulator::Stop (Seconds (20.0));
+  Simulator::Stop (Seconds (3000.0));
 
   Simulator::Run ();
   Simulator::Destroy ();

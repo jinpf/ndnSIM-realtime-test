@@ -3,7 +3,7 @@
 # @Author: jinpf
 # @Date:   2015-07-24 22:14:06
 # @Last Modified by:   jinpf
-# @Last Modified time: 2015-10-29 16:19:29
+# @Last Modified time: 2015-11-07 21:53:49
 
 
 def read_calculate(fname):
@@ -18,9 +18,9 @@ def read_calculate(fname):
 			Datas = record.strip('\n').split('\t')
 			if len(Datas) < 6:
 				break
-			if Datas[5] == 'P_GData':
+			if Datas[5] == 'P_GData' and (int(Datas[4]) not in P_GData_seq):
 				P_GData_seq[int(Datas[4])] = float(Datas[0])
-			if Datas[5] == 'C_Data':
+			if Datas[5] == 'C_Data' and (int(Datas[4]) not in C_Data_seq):
 				C_Data_seq[int(Datas[4])] = float(Datas[0])
 			record = f.readline()
 
@@ -44,7 +44,7 @@ def write_delay(fname,delay):
 			f.write(W_str)
 
 if __name__ == '__main__':
-	type = 'window'
+	type = 'pull'
 	delay = read_calculate('line-'+type+'-packet-record.txt')
 	print ave_delay(delay)
 	write_delay('app_'+type+'_delay.txt',delay)
