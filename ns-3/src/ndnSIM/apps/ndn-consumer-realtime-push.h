@@ -88,7 +88,24 @@ protected:
   ScheduleNextPacket ();
 
   void
-  CheckGetLostData (const uint32_t &seq);
+  Timeout (uint32_t seq);
+
+  /**
+   * \brief Modifies the frequency of checking the retransmission timeouts
+   * \param retxTimer Timeout defining how frequent retransmission timeouts should be checked
+   */
+  void
+  SetRetxTimer (Time retxTimer);
+
+  /**
+   * \brief Returns the frequency of checking the retransmission timeouts
+   * \return Timeout defining how frequent retransmission timeouts should be checked
+   */
+  Time
+  GetRetxTimer () const;
+
+  void
+  SetRetxProcess (uint32_t seq);
 
 protected:
   UniformVariable m_rand; ///< @brief nonce generator
@@ -98,13 +115,25 @@ protected:
   double          m_frequency; // Frequency of interest packets (in hertz)
   bool            m_firstTime;
 
-  Time            m_offTime;             ///< \brief Time interval between packets
+  Time            m_retxTimer; ///< @brief Currently estimated retransmission timer
   Name            m_interestName;        ///< \brief NDN Name of the Interest (use Name)
   Time            m_interestLifeTime;    ///< \brief LifeTime for interest packet
 
   // added to record information by using tracers
   TracedCallback<Ptr<App> , std::string , uint32_t , std::string , uint32_t , int32_t , int32_t , Time>
     m_PacketRecord;
+
+private:
+
+  struct Seq_Info
+  {
+    Time       start_time;  // seq first send time
+    Time       last_retx;   // seq last send time
+    uint32_t   retx_count;  // retransmit time
+    EventId    retxEvent;
+  };
+
+  std::map <uint32_t,Seq_Info> In_flight_Seq; // record in windows seq
 
 };
 

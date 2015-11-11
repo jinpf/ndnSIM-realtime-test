@@ -211,7 +211,7 @@ HybridForwording::OnPushData (Ptr<Face> inFace,
     {
       if (data->GetName().get(-1).toSeqNum() <= pitEntry->GetSeq())
       {
-        super::OnData(inFace,data);
+        OnPullData(inFace,data);
         return;
       }
 
@@ -245,30 +245,30 @@ HybridForwording::OnPushAck(Ptr<Face> inFace,
   Ptr<pit::Entry> pitEntry = m_pit->Find (data->GetName());
   if (pitEntry == 0)
     {
-      bool cached = false;
+      // bool cached = false;
 
-      if (m_cacheUnsolicitedData || (m_cacheUnsolicitedDataFromApps && (inFace->GetFlags () & Face::APPLICATION)))
-        {
-          // Optimistically add or update entry in the content store
-          cached = m_contentStore->Add (data);
-        }
-      else
-        {
+      // if (m_cacheUnsolicitedData || (m_cacheUnsolicitedDataFromApps && (inFace->GetFlags () & Face::APPLICATION)))
+      //   {
+      //     // Optimistically add or update entry in the content store
+      //     // cached = m_contentStore->Add (data);
+      //   }
+      // else
+      //   {
           // Drop data packet if PIT entry is not found
           // (unsolicited data packets should not "poison" content store)
 
           //drop dulicated or not requested data packet
           m_dropData (data, inFace);
-        }
+        // }
 
-      DidReceiveUnsolicitedData (inFace, data, cached);
+      // DidReceiveUnsolicitedData (inFace, data, cached);
       return;
     }
-  else
-    {
-      bool cached = m_contentStore->Add (data);
-      DidReceiveSolicitedData (inFace, data, cached);
-    }
+  // else
+  //   {
+  //     // bool cached = m_contentStore->Add (data);
+  //     // DidReceiveSolicitedData (inFace, data, cached);
+  //   }
 
     // std::cout << "[forwarder] pit entry push tag: " << pitEntry->GetpushTag() << " seq: " 
     //           << pitEntry->GetSeq() << std::endl; 

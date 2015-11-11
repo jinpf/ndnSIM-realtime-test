@@ -73,6 +73,12 @@ ConsumerP::GetTypeId (void)
                    MakeDoubleAccessor (&ConsumerP::m_frequency),
                    MakeDoubleChecker<double> ())
 
+    .AddAttribute ("RetxTimer",
+                   "Timeout defining how frequent retransmission timeouts should be checked",
+                   StringValue ("500ms"),
+                   MakeTimeAccessor (&ConsumerP::GetRetxTimer, &ConsumerP::SetRetxTimer),
+                   MakeTimeChecker ())
+
     .AddTraceSource ("PacketRecord", "Record data send and receive in file",
                      MakeTraceSourceAccessor (&ConsumerP::m_PacketRecord))
     ;
@@ -87,6 +93,29 @@ ConsumerP::ConsumerP ()
   , m_firstTime (true)
 {
   NS_LOG_FUNCTION_NOARGS ();
+}
+
+void
+ConsumerP::SetRetxTimer (Time retxTimer)
+{
+  m_retxTimer = retxTimer;
+}
+
+Time
+ConsumerP::GetRetxTimer () const
+{
+  return m_retxTimer;
+}
+
+void
+ConsumerP::Timeout (uint32_t seq)
+{
+  // std::cout << "check time out!" << std::endl;
+  // std::cout << "[consumer] " << seq << "wait" 
+  //           << Simulator::Now () - In_flight_Seq[seq].last_retx
+  //           << " time out!" << std::endl;
+
+  SendPacket(seq);
 }
 
 // Application Methods
@@ -108,6 +137,16 @@ ConsumerP::StopApplication () // Called at time specified by Stop
 
   // cancel periodic packet generation
   Simulator::Cancel (m_sendEvent);
+
+  std::map<uint32_t,Seq_Info>::iterator it = In_flight_Seq.begin();
+  // 'it' is pair pointer, it->first: key, it->second: value
+  while (it != In_flight_Seq.end()) {
+    if (it->second.retxEvent.IsRunning()) {
+      it->second.retxEvent.Cancel();
+      Simulator::Remove(it->second.retxEvent);
+      it++;
+    } 
+  }
 
   // cleanup base stuff
   App::StopApplication ();
@@ -131,9 +170,6 @@ ConsumerP::SendSubscribePacket ()
 
   // NS_LOG_INFO ("Requesting Interest: \n" << *interest);
   NS_LOG_INFO ("> Subscribe Interest ");
-
-  FwHopCountTag hopCountTag;
-  interest->GetPayload ()->AddPacketTag (hopCountTag);
 
   m_transmittedInterests (interest, this, m_face);
   m_face->ReceiveInterest (interest);
@@ -171,18 +207,40 @@ ConsumerP::SendPacket (const uint32_t &seq)
   // NS_LOG_INFO ("Requesting Interest: \n" << *interest);
   NS_LOG_INFO ("> Interest for " << seq);
 
-  FwHopCountTag hopCountTag;
-  interest->GetPayload ()->AddPacketTag (hopCountTag);
-
   m_transmittedInterests (interest, this, m_face);
   m_face->ReceiveInterest (interest);
 
   std::cout << "[consumer]request: " << seq << std::endl;
 
+  // record in In_flight_seq
+  if (In_flight_Seq.find(seq) == In_flight_Seq.end()) {
+    In_flight_Seq[seq].start_time = Simulator::Now();
+    In_flight_Seq[seq].retx_count = 0;
+  } else {
+    In_flight_Seq[seq].retx_count ++ ;
+  }
+
   // record in file
-  m_PacketRecord(this, nameWithSequence->toUri(), seq, "C_Pull_Interest", 0, 
+  m_PacketRecord(this, nameWithSequence->toUri(), seq, "C_Pull_Interest", In_flight_Seq[seq].retx_count, 
                  0, 0, m_interestLifeTime);
 
+  SetRetxProcess (seq);
+
+}
+
+void
+ConsumerP::SetRetxProcess (uint32_t seq)
+{
+  // NS_LOG_DEBUG ("Trying to add " << seq << " with " << Simulator::Now () << ". already " << m_seqTimeouts.size () << " items");
+
+  In_flight_Seq[seq].last_retx = Simulator::Now();
+
+  if (In_flight_Seq[seq].retxEvent.IsRunning()) {
+    In_flight_Seq[seq].retxEvent.Cancel();
+    Simulator::Remove(In_flight_Seq[seq].retxEvent);
+  }
+  In_flight_Seq[seq].retxEvent = Simulator::Schedule (m_retxTimer,
+                                     &ConsumerP::Timeout, this, seq);
 }
 
 ///////////////////////////////////////////////////
@@ -208,7 +266,14 @@ ConsumerP::OnData (Ptr<const Data> data)
     std::cout << "[consumer]recive sub ack, producer seq = " << seq << std::endl;
     m_PacketRecord(this, data->GetName().toUri(), seq, "C_Push_Ack", 0, 
                  0, 0, m_interestLifeTime);
-    CheckGetLostData(seq+1);
+    
+    // get lost data
+    if (seq > m_seq) {
+      for (uint32_t i = m_seq+1; i<=seq; ++i) {
+        SendPacket(i);
+      }
+      m_seq = seq;
+    }
 
   } else {
     seq = data->GetName ().get (-1).toSeqNum ();
@@ -219,8 +284,27 @@ ConsumerP::OnData (Ptr<const Data> data)
     }
     m_PacketRecord(this, data->GetName().toUri(), seq, "C_Data", 0, 
                  0, 0, m_interestLifeTime);
-    CheckGetLostData(seq);
-    m_seq = seq;
+
+    // get lost data
+    if (seq > m_seq) {
+      for (uint32_t i = m_seq+1; i<seq; ++i) {
+        SendPacket(i);
+      }
+      m_seq = seq;
+    } else {
+      // for lost data
+      std::map<uint32_t,Seq_Info>::iterator receSeq = In_flight_Seq.find(seq);
+      if (receSeq == In_flight_Seq.end())
+        return;
+
+      if (receSeq->second.retxEvent.IsRunning()) {
+        receSeq->second.retxEvent.Cancel();
+        Simulator::Remove(receSeq->second.retxEvent);
+      }
+
+      In_flight_Seq.erase(seq);
+    }
+
   }
 
   NS_LOG_INFO ("< DATA for " << seq);
@@ -255,16 +339,6 @@ ConsumerP::ScheduleNextPacket ()
   else if (!m_sendEvent.IsRunning ())
     m_sendEvent = Simulator::Schedule (Seconds(1.0 / m_frequency),
                                        &ConsumerP::SendSubscribePacket, this);
-}
-
-void
-ConsumerP::CheckGetLostData (const uint32_t &seq)
-{
-  if (seq - m_seq > 1)
-  {
-    for (uint32_t i=m_seq+1; i<seq; ++i)
-      SendPacket(i);
-  }
 }
 
 
