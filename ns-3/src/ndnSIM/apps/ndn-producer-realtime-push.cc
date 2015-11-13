@@ -276,8 +276,8 @@ ProducerP::GenerateData()
     m_PacketRecord(this, dataName->toUri(), m_seq, "P_GData", 0, 
                    0, 0, Time(0));
 
-    // if (m_subscribe)
-    //   SendData(m_seq, true);
+    if (m_subscribe)
+      SendData(m_seq, true);
 
     // schedule to generate next data
     ScheduleNextData();

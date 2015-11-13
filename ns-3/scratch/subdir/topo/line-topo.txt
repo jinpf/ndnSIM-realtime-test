@@ -1,4 +1,4 @@
-# topo-grid-3x3.txt
+# line-topo
 
 #   /--------\	    /-\	        /-\	     /--------\
 #   |Consumer|<---->| |<------->| |<---->|Producer|

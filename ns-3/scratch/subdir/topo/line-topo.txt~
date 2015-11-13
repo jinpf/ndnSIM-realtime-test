@@ -29,6 +29,6 @@ link
 # delay:  link delay
 # queue:  MaxPackets for transmission queue on the link (both directions)
 C        R1       100Mbps       1       50ms    20	
-R1       R2       100Mbps       1       50ms    20	ns3::RateErrorModel,ErrorUnit=ERROR_UNIT_PACKET,ErrorRate=0.19
+R1       R2       100Mbps       1       50ms    20	ns3::RateErrorModel,ErrorUnit=ERROR_UNIT_PACKET,ErrorRate=0.18
 R2       P        100Mbps       1       50ms    20
 
