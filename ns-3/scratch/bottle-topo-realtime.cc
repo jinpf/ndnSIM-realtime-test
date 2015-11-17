@@ -59,7 +59,7 @@ main (int argc, char *argv[])
   ndn::StackHelper ndnHelper;
   ndnHelper.SetForwardingStrategy ("ns3::ndn::fw::HybridForwording");
   ndnHelper.SetContentStore("ns3::ndn::cs::Nocache");
-  // ndnHelper.SetContentStore("ns3::ndn::cs::Lru","MaxSize","1000");
+  // ndnHelper.SetContentStore("ns3::ndn::cs::Lru","MaxSize","5");
 
   ndnHelper.InstallAll ();
 
@@ -78,11 +78,11 @@ main (int argc, char *argv[])
   std::string prefix = "/prefix";
 
   for (int i=0; i<3; ++i) {
-    ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerP");
+    ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerR");
     consumerHelper.SetPrefix (prefix);
-    consumerHelper.SetAttribute("RetxTimer", StringValue ("200ms"));
+    consumerHelper.SetAttribute("RetxTimer", StringValue ("200ms")); 
+    // consumerHelper.SetAttribute ("Frequency", StringValue ("5")); // 100 interests a second
     consumerHelper.SetAttribute("LifeTime", StringValue ("5000ms"));
-    consumerHelper.SetAttribute ("Frequency", StringValue ("5")); // 100 interests a second
     consumerHelper.Install (consumerNodes[i]);
   }
 
@@ -103,7 +103,7 @@ main (int argc, char *argv[])
   // add tracer to record in file
   ndn::AppPacketTracer::InstallAll ("scratch/subdir/record/bottle-pull-packet-record.txt");
 
-  Simulator::Stop (Seconds (3000.0));
+  Simulator::Stop (Seconds (2000.0));
 
   Simulator::Run ();
   Simulator::Destroy ();

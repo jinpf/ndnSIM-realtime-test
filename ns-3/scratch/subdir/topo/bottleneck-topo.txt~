@@ -17,8 +17,8 @@ C1    NA   1    3
 C2    NA   3    3
 R1    NA   2    5
 R2    NA   2    7
-C3    NA   3    9
-P     NA   1    9
+C3    NA   1    9
+P     NA   3    9
 
 # Note that `node` can be any string. It is possible to access to the node by name using Names::Find, see examples.
 
@@ -31,9 +31,9 @@ link
 # metric: routing metric
 # delay:  link delay
 # queue:  MaxPackets for transmission queue on the link (both directions)
-C1       R1       100Mbps       1       50ms    20
-C2       R1       100Mbps       1       60ms    20	
-R1       R2       100Mbps       1      100ms    20
+C1       R1       100Mbps       1       50ms    20	ns3::RateErrorModel,ErrorUnit=ERROR_UNIT_PACKET,ErrorRate=0.4
+C2       R1       100Mbps       1       50ms    20	
+R1       R2       100Mbps       1       50ms    20
 R2       P        100Mbps       1       50ms    20
 R2       C3       100Mbps       1       50ms    20
 
