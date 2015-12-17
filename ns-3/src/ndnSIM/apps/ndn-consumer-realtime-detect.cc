@@ -18,7 +18,7 @@
  * Author: Jin Pengfei <jinpengfei@cstnet.cn>
  */
 
-#include "ndn-consumer-realtime.h"
+#include "ndn-consumer-realtime-detect.h"
 #include "ns3/ptr.h"
 #include "ns3/log.h"
 #include "ns3/simulator.h"
@@ -40,61 +40,67 @@
 
 #include "ns3/names.h"
 
-NS_LOG_COMPONENT_DEFINE ("ndn.ConsumerR");
+NS_LOG_COMPONENT_DEFINE ("ndn.ConsumerD");
 
 namespace ns3 {
 namespace ndn {
 
-NS_OBJECT_ENSURE_REGISTERED (ConsumerR);
+NS_OBJECT_ENSURE_REGISTERED (ConsumerD);
 
 TypeId
-ConsumerR::GetTypeId (void)
+ConsumerD::GetTypeId (void)
 {
-  static TypeId tid = TypeId ("ns3::ndn::ConsumerR")
+  static TypeId tid = TypeId ("ns3::ndn::ConsumerD")
     .SetGroupName ("Ndn")
     .SetParent<App> ()
-    .AddConstructor<ConsumerR> ()
+    .AddConstructor<ConsumerD> ()
 
     .AddAttribute ("StartSeq", "Initial sequence number",
                    IntegerValue (0),
-                   MakeIntegerAccessor(&ConsumerR::m_seq),
+                   MakeIntegerAccessor(&ConsumerD::m_seq),
                    MakeIntegerChecker<int32_t>())
 
     .AddAttribute ("MaxSeq", "Max sequence number",
-                   IntegerValue (10000),
-                   MakeIntegerAccessor(&ConsumerR::m_seqMax),
+                   IntegerValue (1000),
+                   MakeIntegerAccessor(&ConsumerD::m_seqMax),
                    MakeIntegerChecker<int32_t>())
+
+    .AddAttribute ("Frequency", "Frequency of interest packets",
+                   StringValue ("1.0"),
+                   MakeDoubleAccessor (&ConsumerD::m_frequency),
+                   MakeDoubleChecker<double> ())
 
     .AddAttribute ("Prefix","Name of the Interest",
                    StringValue ("/"),
-                   MakeNameAccessor (&ConsumerR::m_interestName),
+                   MakeNameAccessor (&ConsumerD::m_interestName),
                    MakeNameChecker ())
     .AddAttribute ("LifeTime", "LifeTime for interest packet",
                    StringValue ("2s"),
-                   MakeTimeAccessor (&ConsumerR::m_interestLifeTime),
+                   MakeTimeAccessor (&ConsumerD::m_interestLifeTime),
                    MakeTimeChecker ())
 
     .AddAttribute ("RetxTimer",
                    "Timeout defining how frequent retransmission timeouts should be checked",
                    StringValue ("500ms"),
-                   MakeTimeAccessor (&ConsumerR::GetRetxTimer, &ConsumerR::SetRetxTimer),
+                   MakeTimeAccessor (&ConsumerD::GetRetxTimer, &ConsumerD::SetRetxTimer),
                    MakeTimeChecker ())
 
     .AddAttribute ("Window", "window size",
-                   StringValue ("10"),
-                   MakeIntegerAccessor (&ConsumerR::GetWindow, &ConsumerR::SetWindow),
+                   StringValue ("5"),
+                   MakeIntegerAccessor (&ConsumerD::GetWindow, &ConsumerD::SetWindow),
                    MakeIntegerChecker<int32_t> ())
 
     .AddTraceSource ("PacketRecord", "Record data send and receive in file",
-                     MakeTraceSourceAccessor (&ConsumerR::m_PacketRecord))
+                     MakeTraceSourceAccessor (&ConsumerD::m_PacketRecord))
 
     ;
 
   return tid;
 }
 
-ConsumerR::ConsumerR ()
+ConsumerD::ConsumerD ()
   : m_rand (0, std::numeric_limits<uint32_t>::max ())
+  , m_firstTime (true)
   , m_seq (0)
 {
   NS_LOG_FUNCTION_NOARGS ();
@@ -103,19 +109,19 @@ ConsumerR::ConsumerR ()
 }
 
 void
-ConsumerR::SetRetxTimer (Time retxTimer)
+ConsumerD::SetRetxTimer (Time retxTimer)
 {
   m_retxTimer = retxTimer;
 }
 
 Time
-ConsumerR::GetRetxTimer () const
+ConsumerD::GetRetxTimer () const
 {
   return m_retxTimer;
 }
 
 void
-ConsumerR::Timeout (uint32_t seq)
+ConsumerD::Timeout (uint32_t seq)
 {
   // std::cout << "check time out!" << std::endl;
   // std::cout << "[consumer] " << seq << "wait" 
@@ -126,20 +132,20 @@ ConsumerR::Timeout (uint32_t seq)
 }
 
 void
-ConsumerR::SetWindow (int32_t window)
+ConsumerD::SetWindow (int32_t window)
 {
   m_MaxWindow = window;
 }
 
 uint32_t
-ConsumerR::GetWindow () const
+ConsumerD::GetWindow () const
 {
   return m_MaxWindow;
 }
 
 // Application Methods
 void
-ConsumerR::StartApplication () // Called at time specified by Start
+ConsumerD::StartApplication () // Called at time specified by Start
 {
   NS_LOG_FUNCTION_NOARGS ();
 
@@ -148,11 +154,13 @@ ConsumerR::StartApplication () // Called at time specified by Start
   // do base stuff
   App::StartApplication ();
 
+  ScheduleNextDetect ();
+
   ScheduleNextPacket ();
 }
 
 void
-ConsumerR::StopApplication () // Called at time specified by Stop
+ConsumerD::StopApplication () // Called at time specified by Stop
 {
   NS_LOG_FUNCTION_NOARGS ();
 
@@ -174,7 +182,24 @@ ConsumerR::StopApplication () // Called at time specified by Stop
 }
 
 void
-ConsumerR::ScheduleNextPacket ()
+ConsumerD::ScheduleNextDetect ()
+{
+  // double mean = 8.0 * m_payloadSize / m_desiredRate.GetBitRate ();
+  // std::cout << "next: " << Simulator::Now().ToDouble(Time::S) + mean << "s\n";
+
+  if (m_firstTime)
+    {
+      m_sendEvent = Simulator::Schedule (Seconds (0.0),
+                                         &ConsumerD::SendDetect, this);
+      m_firstTime = false;
+    }
+  else if (!m_sendEvent.IsRunning ())
+    m_sendEvent = Simulator::Schedule (Seconds(1.0 / m_frequency),
+                                       &ConsumerD::SendDetect, this);
+}
+
+void
+ConsumerD::ScheduleNextPacket ()
 {
   if (!m_active) return;
   NS_LOG_FUNCTION_NOARGS ();
@@ -190,7 +215,38 @@ ConsumerR::ScheduleNextPacket ()
 }
 
 void
-ConsumerR::SendPacket (uint32_t seq)
+ConsumerD::SendDetect()
+{
+  if (!m_active) return;
+
+  NS_LOG_FUNCTION_NOARGS ();
+
+  uint32_t tag = m_rand.GetValue ();
+
+  Ptr<Name> nameWithTag = Create<Name> (m_interestName+Name("/detect"));
+  nameWithTag->appendSeqNum (tag);
+  //
+
+  Ptr<Interest> interest = Create<Interest> ();
+  interest->SetNonce               (m_rand.GetValue ());
+  interest->SetName                (nameWithTag);
+  interest->SetInterestLifetime    (m_interestLifeTime);
+  std::cout << "[consumer] send detect packet:" << nameWithTag->get(-2).toUri() << std::endl;
+  if (nameWithTag->get(-2).toUri() == "detect")
+    std::cout << "test right!" << std::endl;
+  else
+    std::cout << "test wrong!" << std::endl;
+  m_transmittedInterests (interest, this, m_face);
+  m_face->ReceiveInterest (interest);
+
+  // record in m_detect_send_time
+  m_detect_send_time[tag] = Simulator::Now();
+
+  ScheduleNextDetect();
+}
+
+void
+ConsumerD::SendPacket (uint32_t seq)
 {
   if (!m_active) return;
 
@@ -230,7 +286,7 @@ ConsumerR::SendPacket (uint32_t seq)
 }
 
 void
-ConsumerR::SetRetxProcess (uint32_t seq)
+ConsumerD::SetRetxProcess (uint32_t seq)
 {
   // NS_LOG_DEBUG ("Trying to add " << seq << " with " << Simulator::Now () << ". already " << m_seqTimeouts.size () << " items");
 
@@ -241,7 +297,7 @@ ConsumerR::SetRetxProcess (uint32_t seq)
     Simulator::Remove(In_flight_Seq[seq].retxEvent);
   }
   In_flight_Seq[seq].retxEvent = Simulator::Schedule (m_retxTimer,
-                                     &ConsumerR::Timeout, this, seq);
+                                     &ConsumerD::Timeout, this, seq);
 }
 
 ///////////////////////////////////////////////////
@@ -250,7 +306,7 @@ ConsumerR::SetRetxProcess (uint32_t seq)
 
 
 void
-ConsumerR::OnData (Ptr<const Data> data)
+ConsumerD::OnData (Ptr<const Data> data)
 {
   if (!m_active) return;
 
@@ -260,6 +316,11 @@ ConsumerR::OnData (Ptr<const Data> data)
 
   // NS_LOG_INFO ("Received content object: " << boost::cref(*data));
 
+  if (data->GetName().size() >= 3 && data->GetName().get(-3).toUri() == "detect") {
+    OnDetectData (data);
+    return;
+  }
+    
   uint32_t seq = data->GetName ().get (-1).toSeqNum ();
   NS_LOG_INFO ("< DATA for " << seq);
 
@@ -285,7 +346,21 @@ ConsumerR::OnData (Ptr<const Data> data)
 }
 
 void
-ConsumerR::OnNack (Ptr<const Interest> interest)
+ConsumerD::OnDetectData (Ptr<const Data> data)
+{
+  uint32_t tag = data->GetName ().get (-2).toSeqNum ();
+  uint32_t seq = data->GetName ().get (-1).toSeqNum ();
+
+  if (m_detect_send_time.find(tag) == m_detect_send_time.end())
+    return;
+  Time rtt = Simulator::Now() - m_detect_send_time[tag];
+  std::cout << "[consumer] receive detect reply, rtt:" << rtt.As(Time::S) << " last seq:" << seq << std::endl;
+
+  m_detect_send_time.erase(tag);
+}
+
+void
+ConsumerD::OnNack (Ptr<const Interest> interest)
 {
   if (!m_active) return;
 

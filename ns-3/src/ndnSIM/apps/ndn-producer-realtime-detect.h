@@ -18,8 +18,8 @@
  * Author: Jin Pengfei <jinpengfei@cstnet.cn>     
  */
 
-#ifndef NDN_PRODUCER_PUSH_H
-#define NDN_PRODUCER_PUSH_H
+#ifndef NDN_PRODUCER_D_H
+#define NDN_PRODUCER_D_H
 
 #include "ndn-app.h"
 
@@ -41,34 +41,30 @@ namespace ndn {
  * size and name same as in Interest.cation, which replying every incoming Interest
  * with Data packet with a specified size and name same as in Interest.
  */
-class ProducerP : public App
+class ProducerD : public App
 {
 public:
   static TypeId
   GetTypeId (void);
 
-  ProducerP ();
-  virtual ~ProducerP ();
+  ProducerD ();
+  virtual ~ProducerD ();
 
   // inherited from NdnApp
   void OnInterest (Ptr<const Interest> interest);
 
+  void OnDetectInterest(Name & name);
+
   // senddata with seq
   void
-  SendData(const uint32_t &seq, bool subscribe);
-
-  void
-  SendSubAck();
+  SendData(const uint32_t &seq);
 
 protected:
   // inherited from Application base class.
 
   uint32_t        m_seq;  // currently generated sequence number
   uint32_t        m_seqMax;    // maximum number of sequence number
-  uint32_t        m_r_seq;  // consumer asked most recent sequence number
-  bool            m_subscribe;
-  bool            m_realpush;  // pull push bool
-  double          m_frequency;  // frequency of data packet gererating in 1 second
+  double m_frequency;  // frequency of data packet gererating in 1 second
   RandomVariable *m_random;  // random
   std::string m_randomType; //  random type: uniform or exponential
   EventId m_generateEvent; // EventId of generate data event
@@ -118,4 +114,4 @@ private:
 } // namespace ndn
 } // namespace ns3
 
-#endif // NDN_PRODUCER_PUSH_H
+#endif // NDN_PRODUCER_D_H
