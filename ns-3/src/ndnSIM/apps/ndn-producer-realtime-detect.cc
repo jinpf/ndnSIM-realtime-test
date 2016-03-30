@@ -107,6 +107,7 @@ ProducerD::ProducerD ()
 {
   // NS_LOG_FUNCTION_NOARGS ();
   m_seqMax = std::numeric_limits<uint32_t>::max ();
+  c_seq = 0;
 }
 
 ProducerD::~ProducerD ()
@@ -162,11 +163,16 @@ ProducerD::OnInterest (Ptr<const Interest> interest)
   Name dataName(interest->GetName());
 
   if (dataName.get(-2).toUri() == "detect") {
+    // record in file
+    m_PacketRecord(this, interest->GetName().toUri(), 0, "P_Detect_Interest", 0, 
+                 0, 0, Time(0));
     OnDetectInterest(dataName);
     return;
   }
 
   uint32_t seq = dataName.get(-1).toSeqNum();
+  if (seq > c_seq)
+    c_seq = seq;
 
   std::cout << "[producer]receive comsumer request: " << seq ;
 
@@ -187,7 +193,7 @@ void
 ProducerD::OnDetectInterest(Name & name)
 {
   name.appendSeqNum(m_seq);
-  Ptr<Data> data = Create<Data> (Create<Packet> (m_virtualPayloadSize));
+  Ptr<Data> data = Create<Data> (Create<Packet> (1));
   data->SetName (name);
   data->SetFreshness (m_freshness);
   data->SetTimestamp (Simulator::Now());
@@ -203,9 +209,9 @@ ProducerD::OnDetectInterest(Name & name)
   m_face->ReceiveData (data);
   m_transmittedDatas (data, this, m_face);
 
-  // record in file
-  // m_PacketRecord(this, dataName->toUri(), seq, "P_Data", 0, 
-  //                0, 0, Time(0));
+  //record in file
+  m_PacketRecord(this, name.toUri(), m_seq, "P_Detect_Data", 0, 
+                 0, 0, Time(0));
 
   std::cout << " reply detect data " << m_seq << std::endl;
 }
@@ -254,6 +260,10 @@ ProducerD::GenerateData()
     // record in file
     m_PacketRecord(this, dataName->toUri(), m_seq, "P_GData", 0, 
                    0, 0, Time(0));
+
+    // consumer ever asked
+    if (c_seq > m_seq)
+      SendData(m_seq);
 
     // schedule to generate next data
     ScheduleNextData();

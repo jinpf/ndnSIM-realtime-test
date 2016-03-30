@@ -86,7 +86,7 @@ ConsumerD::GetTypeId (void)
                    MakeTimeChecker ())
 
     .AddAttribute ("Window", "window size",
-                   StringValue ("5"),
+                   StringValue ("4"),
                    MakeIntegerAccessor (&ConsumerD::GetWindow, &ConsumerD::SetWindow),
                    MakeIntegerChecker<int32_t> ())
 
@@ -104,6 +104,11 @@ ConsumerD::ConsumerD ()
   , m_seq (0)
 {
   NS_LOG_FUNCTION_NOARGS ();
+
+  p_seq_a = 0;
+  p_seq_b = 0;
+  p_latest_seq = 0;
+  p_detect_time = Time(0);
 
   // m_rtt = CreateObject<RttMeanDeviation> ();
 }
@@ -149,8 +154,6 @@ ConsumerD::StartApplication () // Called at time specified by Start
 {
   NS_LOG_FUNCTION_NOARGS ();
 
-  m_Window = m_MaxWindow;
-
   // do base stuff
   App::StartApplication ();
 
@@ -193,7 +196,7 @@ ConsumerD::ScheduleNextDetect ()
                                          &ConsumerD::SendDetect, this);
       m_firstTime = false;
     }
-  else if (!m_sendEvent.IsRunning ())
+  else if (!m_sendEvent.IsRunning () )
     m_sendEvent = Simulator::Schedule (Seconds(1.0 / m_frequency),
                                        &ConsumerD::SendDetect, this);
 }
@@ -204,14 +207,11 @@ ConsumerD::ScheduleNextPacket ()
   if (!m_active) return;
   NS_LOG_FUNCTION_NOARGS ();
 
-  while (m_Window > 0 && m_seq < m_seqMax)
-  {
-    m_Window --;
-    m_seq ++;
-    // std::cout << "[consumer] prepare send " << m_seq << " win: " << m_Window << std::endl;
+  while (m_seq < p_latest_seq + m_MaxWindow && m_seq < m_seqMax) {
+    m_seq++;
+    std::cout << "[consumer] p latest seq:" << p_latest_seq << " ";
     SendPacket(m_seq);
   }
-
 }
 
 void
@@ -232,15 +232,19 @@ ConsumerD::SendDetect()
   interest->SetName                (nameWithTag);
   interest->SetInterestLifetime    (m_interestLifeTime);
   std::cout << "[consumer] send detect packet:" << nameWithTag->get(-2).toUri() << std::endl;
-  if (nameWithTag->get(-2).toUri() == "detect")
-    std::cout << "test right!" << std::endl;
-  else
-    std::cout << "test wrong!" << std::endl;
+  // if (nameWithTag->get(-2).toUri() == "detect")
+  //   std::cout << "test right!" << std::endl;
+  // else
+  //   std::cout << "test wrong!" << std::endl;
   m_transmittedInterests (interest, this, m_face);
   m_face->ReceiveInterest (interest);
 
   // record in m_detect_send_time
   m_detect_send_time[tag] = Simulator::Now();
+
+  // record in file
+  m_PacketRecord(this, nameWithTag->toUri(), p_latest_seq, "C_Detect_Interest", 0, 
+                 m_MaxWindow, m_MaxWindow, m_interestLifeTime);
 
   ScheduleNextDetect();
 }
@@ -279,7 +283,7 @@ ConsumerD::SendPacket (uint32_t seq)
 
   // record in file
   m_PacketRecord(this, nameWithSequence->toUri(), seq, "C_Interest", In_flight_Seq[seq].retx_count, 
-                 m_Window, m_MaxWindow, m_interestLifeTime);
+                 m_MaxWindow, m_MaxWindow, m_interestLifeTime);
 
   SetRetxProcess (seq);
 
@@ -324,6 +328,10 @@ ConsumerD::OnData (Ptr<const Data> data)
   uint32_t seq = data->GetName ().get (-1).toSeqNum ();
   NS_LOG_INFO ("< DATA for " << seq);
 
+  if (seq > p_latest_seq) {
+    p_latest_seq = seq;
+  }
+
   std::map<uint32_t,Seq_Info>::iterator receSeq = In_flight_Seq.find(seq);
   if (receSeq == In_flight_Seq.end())
     return;
@@ -335,12 +343,9 @@ ConsumerD::OnData (Ptr<const Data> data)
 
   // record in file
   m_PacketRecord(this, data->GetName().toUri(), seq, "C_Data", In_flight_Seq[seq].retx_count, 
-                 m_Window, m_MaxWindow, m_interestLifeTime);
+                 m_MaxWindow, m_MaxWindow, m_interestLifeTime);
 
   In_flight_Seq.erase(seq);
-
-  if (m_Window < m_MaxWindow)
-    m_Window ++;
 
   ScheduleNextPacket();
 }
@@ -354,9 +359,31 @@ ConsumerD::OnDetectData (Ptr<const Data> data)
   if (m_detect_send_time.find(tag) == m_detect_send_time.end())
     return;
   Time rtt = Simulator::Now() - m_detect_send_time[tag];
-  std::cout << "[consumer] receive detect reply, rtt:" << rtt.As(Time::S) << " last seq:" << seq << std::endl;
+
+  if (seq >= p_seq_b) {
+    p_seq_a = p_seq_b;
+    p_seq_b = seq;
+
+    if (seq > p_latest_seq)
+      p_latest_seq = seq;
+  }
+  if(p_seq_a && p_seq_b) {
+    Time delta = Simulator::Now() - p_detect_time;
+
+    m_MaxWindow = (p_seq_b - p_seq_a) / delta.ToDouble(Time::MS) * rtt.ToDouble(Time::MS);
+    m_MaxWindow = (m_MaxWindow+1) * 2;
+  }
+
+  p_detect_time = Simulator::Now();
+
+  std::cout << "[consumer] receive detect reply, rtt:" << rtt.As(Time::S) << " last seq:" << seq  << " win :" << m_MaxWindow << std::endl;
 
   m_detect_send_time.erase(tag);
+
+  m_PacketRecord(this, data->GetName().toUri(), seq, "C_Detect_Data", 0, 
+                 m_MaxWindow, m_MaxWindow, m_interestLifeTime);
+
+  ScheduleNextPacket();
 }
 
 void
@@ -381,7 +408,7 @@ ConsumerD::OnNack (Ptr<const Interest> interest)
 
   // record in file
   m_PacketRecord(this, interest->GetName().toUri(), seq, "C_Nack", In_flight_Seq[seq].retx_count, 
-                 m_Window, m_MaxWindow, m_interestLifeTime);
+                 m_MaxWindow, m_MaxWindow, m_interestLifeTime);
 
   SendPacket (seq);
 }

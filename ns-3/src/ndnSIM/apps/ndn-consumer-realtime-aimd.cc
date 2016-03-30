@@ -18,7 +18,7 @@
  * Author: Jin Pengfei <jinpengfei@cstnet.cn>
  */
 
-#include "ndn-consumer-realtime.h"
+#include "ndn-consumer-realtime-aimd.h"
 #include "ns3/ptr.h"
 #include "ns3/log.h"
 #include "ns3/simulator.h"
@@ -40,82 +40,88 @@
 
 #include "ns3/names.h"
 
-NS_LOG_COMPONENT_DEFINE ("ndn.ConsumerR");
+NS_LOG_COMPONENT_DEFINE ("ndn.ConsumerA");
 
 namespace ns3 {
 namespace ndn {
 
-NS_OBJECT_ENSURE_REGISTERED (ConsumerR);
+NS_OBJECT_ENSURE_REGISTERED (ConsumerA);
 
 TypeId
-ConsumerR::GetTypeId (void)
+ConsumerA::GetTypeId (void)
 {
-  static TypeId tid = TypeId ("ns3::ndn::ConsumerR")
+  static TypeId tid = TypeId ("ns3::ndn::ConsumerA")
     .SetGroupName ("Ndn")
     .SetParent<App> ()
-    .AddConstructor<ConsumerR> ()
+    .AddConstructor<ConsumerA> ()
 
     .AddAttribute ("StartSeq", "Initial sequence number",
                    IntegerValue (0),
-                   MakeIntegerAccessor(&ConsumerR::m_seq),
+                   MakeIntegerAccessor(&ConsumerA::m_seq),
                    MakeIntegerChecker<int32_t>())
 
     .AddAttribute ("MaxSeq", "Max sequence number",
                    IntegerValue (1000),
-                   MakeIntegerAccessor(&ConsumerR::m_seqMax),
+                   MakeIntegerAccessor(&ConsumerA::m_seqMax),
                    MakeIntegerChecker<int32_t>())
 
     .AddAttribute ("Prefix","Name of the Interest",
                    StringValue ("/"),
-                   MakeNameAccessor (&ConsumerR::m_interestName),
+                   MakeNameAccessor (&ConsumerA::m_interestName),
                    MakeNameChecker ())
     .AddAttribute ("LifeTime", "LifeTime for interest packet",
                    StringValue ("2s"),
-                   MakeTimeAccessor (&ConsumerR::m_interestLifeTime),
+                   MakeTimeAccessor (&ConsumerA::m_interestLifeTime),
                    MakeTimeChecker ())
 
     .AddAttribute ("RetxTimer",
                    "Timeout defining how frequent retransmission timeouts should be checked",
                    StringValue ("500ms"),
-                   MakeTimeAccessor (&ConsumerR::GetRetxTimer, &ConsumerR::SetRetxTimer),
+                   MakeTimeAccessor (&ConsumerA::GetRetxTimer, &ConsumerA::SetRetxTimer),
                    MakeTimeChecker ())
 
     .AddAttribute ("Window", "window size",
-                   StringValue ("5"),
-                   MakeIntegerAccessor (&ConsumerR::GetWindow, &ConsumerR::SetWindow),
+                   StringValue ("10"),
+                   MakeIntegerAccessor (&ConsumerA::GetWindow, &ConsumerA::SetWindow),
                    MakeIntegerChecker<int32_t> ())
 
     .AddTraceSource ("PacketRecord", "Record data send and receive in file",
-                     MakeTraceSourceAccessor (&ConsumerR::m_PacketRecord))
+                     MakeTraceSourceAccessor (&ConsumerA::m_PacketRecord))
 
     ;
 
   return tid;
 }
 
-ConsumerR::ConsumerR ()
+ConsumerA::ConsumerA ()
   : m_rand (0, std::numeric_limits<uint32_t>::max ())
+  , m_firstTime (true)
   , m_seq (0)
 {
   NS_LOG_FUNCTION_NOARGS ();
+
+  p_seq_a = 0;
+  p_seq_b = 0;
+  p_latest_seq = 0;
+  p_detect_time = Time(0);
 
   // m_rtt = CreateObject<RttMeanDeviation> ();
 }
 
 void
-ConsumerR::SetRetxTimer (Time retxTimer)
+ConsumerA::SetRetxTimer (Time retxTimer)
 {
   m_retxTimer = retxTimer;
 }
 
 Time
-ConsumerR::GetRetxTimer () const
+ConsumerA::GetRetxTimer () const
 {
   return m_retxTimer;
 }
 
 void
-ConsumerR::Timeout (uint32_t seq)
+ConsumerA::Timeout (uint32_t seq)
 {
   // std::cout << "check time out!" << std::endl;
   // std::cout << "[consumer] " << seq << "wait" 
@@ -126,24 +132,22 @@ ConsumerR::Timeout (uint32_t seq)
 }
 
 void
-ConsumerR::SetWindow (int32_t window)
+ConsumerA::SetWindow (int32_t window)
 {
   m_MaxWindow = window;
 }
 
 uint32_t
-ConsumerR::GetWindow () const
+ConsumerA::GetWindow () const
 {
   return m_MaxWindow;
 }
 
 // Application Methods
 void
-ConsumerR::StartApplication () // Called at time specified by Start
+ConsumerA::StartApplication () // Called at time specified by Start
 {
   NS_LOG_FUNCTION_NOARGS ();
-
-  m_Window = m_MaxWindow;
 
   // do base stuff
   App::StartApplication ();
@@ -152,7 +156,7 @@ ConsumerR::StartApplication () // Called at time specified by Start
 }
 
 void
-ConsumerR::StopApplication () // Called at time specified by Stop
+ConsumerA::StopApplication () // Called at time specified by Stop
 {
   NS_LOG_FUNCTION_NOARGS ();
 
@@ -174,23 +178,20 @@ ConsumerR::StopApplication () // Called at time specified by Stop
 }
 
 void
-ConsumerR::ScheduleNextPacket ()
+ConsumerA::ScheduleNextPacket ()
 {
   if (!m_active) return;
   NS_LOG_FUNCTION_NOARGS ();
 
-  while (m_Window > 0 && m_seq < m_seqMax)
-  {
-    m_Window --;
-    m_seq ++;
-    // std::cout << "[consumer] prepare send " << m_seq << " win: " << m_Window << std::endl;
+  while (m_seq < p_latest_seq + m_MaxWindow && m_seq < m_seqMax) {
+    m_seq++;
+    std::cout << "[consumer] p latest seq:" << p_latest_seq << " ";
     SendPacket(m_seq);
   }
-
 }
 
 void
-ConsumerR::SendPacket (uint32_t seq)
+ConsumerA::SendPacket (uint32_t seq)
 {
   if (!m_active) return;
 
@@ -223,14 +224,14 @@ ConsumerR::SendPacket (uint32_t seq)
 
   // record in file
   m_PacketRecord(this, nameWithSequence->toUri(), seq, "C_Interest", In_flight_Seq[seq].retx_count, 
-                 m_Window, m_MaxWindow, m_interestLifeTime);
+                 m_MaxWindow, m_MaxWindow, m_interestLifeTime);
 
   SetRetxProcess (seq);
 
 }
 
 void
-ConsumerR::SetRetxProcess (uint32_t seq)
+ConsumerA::SetRetxProcess (uint32_t seq)
 {
   // NS_LOG_DEBUG ("Trying to add " << seq << " with " << Simulator::Now () << ". already " << m_seqTimeouts.size () << " items");
 
@@ -241,7 +242,7 @@ ConsumerR::SetRetxProcess (uint32_t seq)
     Simulator::Remove(In_flight_Seq[seq].retxEvent);
   }
   In_flight_Seq[seq].retxEvent = Simulator::Schedule (m_retxTimer,
-                                     &ConsumerR::Timeout, this, seq);
+                                     &ConsumerA::Timeout, this, seq);
 }
 
 ///////////////////////////////////////////////////
@@ -250,7 +251,7 @@ ConsumerR::SetRetxProcess (uint32_t seq)
 
 
 void
-ConsumerR::OnData (Ptr<const Data> data)
+ConsumerA::OnData (Ptr<const Data> data)
 {
   if (!m_active) return;
 
@@ -259,9 +260,13 @@ ConsumerR::OnData (Ptr<const Data> data)
   NS_LOG_FUNCTION (this << data);
 
   // NS_LOG_INFO ("Received content object: " << boost::cref(*data));
-
+    
   uint32_t seq = data->GetName ().get (-1).toSeqNum ();
   NS_LOG_INFO ("< DATA for " << seq);
+
+  if (seq > p_latest_seq) {
+    p_latest_seq = seq;
+  }
 
   std::map<uint32_t,Seq_Info>::iterator receSeq = In_flight_Seq.find(seq);
   if (receSeq == In_flight_Seq.end())
@@ -274,18 +279,15 @@ ConsumerR::OnData (Ptr<const Data> data)
 
   // record in file
   m_PacketRecord(this, data->GetName().toUri(), seq, "C_Data", In_flight_Seq[seq].retx_count, 
-                 m_Window, m_MaxWindow, m_interestLifeTime);
+                 m_MaxWindow, m_MaxWindow, m_interestLifeTime);
 
   In_flight_Seq.erase(seq);
-
-  if (m_Window < m_MaxWindow)
-    m_Window ++;
 
   ScheduleNextPacket();
 }
 
 void
-ConsumerR::OnNack (Ptr<const Interest> interest)
+ConsumerA::OnNack (Ptr<const Interest> interest)
 {
   if (!m_active) return;
 
@@ -306,7 +308,7 @@ ConsumerR::OnNack (Ptr<const Interest> interest)
 
   // record in file
   m_PacketRecord(this, interest->GetName().toUri(), seq, "C_Nack", In_flight_Seq[seq].retx_count, 
-                 m_Window, m_MaxWindow, m_interestLifeTime);
+                 m_MaxWindow, m_MaxWindow, m_interestLifeTime);
 
   SendPacket (seq);
 }

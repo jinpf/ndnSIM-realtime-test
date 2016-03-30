@@ -58,8 +58,8 @@ main (int argc, char *argv[])
   // Install NDN stack on all nodes
   ndn::StackHelper ndnHelper;
   ndnHelper.SetForwardingStrategy ("ns3::ndn::fw::HybridForwording");
-  ndnHelper.SetContentStore("ns3::ndn::cs::Nocache");
-  // ndnHelper.SetContentStore("ns3::ndn::cs::Lru","MaxSize","5");
+  // ndnHelper.SetContentStore("ns3::ndn::cs::Nocache");
+  ndnHelper.SetContentStore("ns3::ndn::cs::Lru","MaxSize","18");
 
   ndnHelper.InstallAll ();
 
@@ -78,17 +78,17 @@ main (int argc, char *argv[])
   std::string prefix = "/prefix";
 
   for (int i=0; i<3; ++i) {
-    ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerR");
+    ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerP");
     consumerHelper.SetPrefix (prefix);
-    consumerHelper.SetAttribute("RetxTimer", StringValue ("200ms")); 
-    // consumerHelper.SetAttribute ("Frequency", StringValue ("5")); // 100 interests a second
-    consumerHelper.SetAttribute("LifeTime", StringValue ("5000ms"));
+    consumerHelper.SetAttribute("RetxTimer", StringValue ("1000ms")); 
+    consumerHelper.SetAttribute ("Frequency", StringValue ("1")); // 100 interests a second
+    consumerHelper.SetAttribute("LifeTime", StringValue ("1010ms"));
     consumerHelper.Install (consumerNodes[i]);
   }
 
   ndn::AppHelper producerHelper ("ns3::ndn::ProducerP");
   producerHelper.SetPrefix (prefix);
-  producerHelper.SetAttribute("Frequency", StringValue ("1")); // 100 data a second
+  producerHelper.SetAttribute("Frequency", StringValue ("10")); // 100 data a second
   producerHelper.SetAttribute ("PayloadSize", StringValue("1024"));
   producerHelper.SetAttribute("Randomize", StringValue ("exponential"));
   producerHelper.SetAttribute("MaxSeq", IntegerValue (1000));
@@ -103,7 +103,7 @@ main (int argc, char *argv[])
   // add tracer to record in file
   ndn::AppPacketTracer::InstallAll ("scratch/subdir/record/bottle-pull-packet-record.txt");
 
-  Simulator::Stop (Seconds (2000.0));
+  Simulator::Stop (Seconds (1500.0));
 
   Simulator::Run ();
   Simulator::Destroy ();

@@ -75,16 +75,16 @@ main (int argc, char *argv[])
   // Install NDN applications
   std::string prefix = "/prefix";
 
-  ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerD");
+  ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerA");
   consumerHelper.SetPrefix (prefix);
-  consumerHelper.SetAttribute("Frequency", StringValue ("2"));
-  consumerHelper.SetAttribute("RetxTimer", StringValue ("1000ms"));
-  consumerHelper.SetAttribute("LifeTime", StringValue ("1010ms"));
+  // consumerHelper.SetAttribute("Frequency", StringValue ("2"));
+  consumerHelper.SetAttribute("RetxTimer", StringValue ("300ms"));
+  consumerHelper.SetAttribute("LifeTime", StringValue ("310ms"));
   consumerHelper.Install (consumerNodes);
 
   ndn::AppHelper producerHelper ("ns3::ndn::ProducerD");
   producerHelper.SetPrefix (prefix);
-  producerHelper.SetAttribute("Frequency", StringValue ("10")); // 100 data a second
+  producerHelper.SetAttribute("Frequency", StringValue ("1")); // 100 data a second
   producerHelper.SetAttribute ("PayloadSize", StringValue("1024"));
   producerHelper.SetAttribute("Randomize", StringValue ("exponential"));
   producerHelper.SetAttribute("MaxSeq", IntegerValue (1000));
@@ -97,7 +97,7 @@ main (int argc, char *argv[])
   ndn::GlobalRoutingHelper::CalculateRoutes ();
 
   // add tracer to record in file
-  ndn::AppPacketTracer::InstallAll ("scratch/subdir/record/line-detect-packet-record.txt");
+  ndn::AppPacketTracer::InstallAll ("scratch/subdir/record/line-aimd-packet-record.txt");
 
   Simulator::Stop (Seconds (3000.0));
 

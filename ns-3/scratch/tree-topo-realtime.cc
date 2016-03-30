@@ -17,7 +17,7 @@
  *
  * Author: Jin Pengfei <jinpengfei@cstnet.cn>
  */
-// line-topo-realtime.cc
+// bottle-topo-realtime.cc
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/ndnSIM-module.h"
@@ -51,15 +51,15 @@ main (int argc, char *argv[])
   cmd.Parse (argc, argv);
 
   AnnotatedTopologyReader topologyReader ("", 25);
-  topologyReader.SetFileName ("scratch/subdir/topo/line-topo.txt");
+  topologyReader.SetFileName ("scratch/subdir/topo/tree.txt");
   topologyReader.Read ();
 
 
   // Install NDN stack on all nodes
   ndn::StackHelper ndnHelper;
-  ndnHelper.SetForwardingStrategy ("ns3::ndn::fw::BestRoute");
+  ndnHelper.SetForwardingStrategy ("ns3::ndn::fw::HybridForwording");
   ndnHelper.SetContentStore("ns3::ndn::cs::Nocache");
-  // ndnHelper.SetContentStore("ns3::ndn::cs::Lru","MaxSize","2");
+  // ndnHelper.SetContentStore("ns3::ndn::cs::Lru","MaxSize","24");
 
   ndnHelper.InstallAll ();
 
@@ -69,20 +69,29 @@ main (int argc, char *argv[])
 
   // Getting containers for the consumer/producer
   Ptr<Node> producer = Names::Find<Node> ("P");
-  NodeContainer consumerNodes;
-  consumerNodes.Add (Names::Find<Node> ("C"));
+  NodeContainer consumerNodes[8];
+  consumerNodes[0].Add (Names::Find<Node> ("C1"));
+  consumerNodes[1].Add (Names::Find<Node> ("C2"));
+  consumerNodes[2].Add (Names::Find<Node> ("C3"));
+  consumerNodes[3].Add (Names::Find<Node> ("C4"));
+  consumerNodes[4].Add (Names::Find<Node> ("C5"));
+  consumerNodes[5].Add (Names::Find<Node> ("C6"));
+  consumerNodes[6].Add (Names::Find<Node> ("C7"));
+  consumerNodes[7].Add (Names::Find<Node> ("C8"));
 
   // Install NDN applications
   std::string prefix = "/prefix";
 
-  ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerD");
-  consumerHelper.SetPrefix (prefix);
-  consumerHelper.SetAttribute("Frequency", StringValue ("2"));
-  consumerHelper.SetAttribute("RetxTimer", StringValue ("1000ms"));
-  consumerHelper.SetAttribute("LifeTime", StringValue ("1010ms"));
-  consumerHelper.Install (consumerNodes);
+  for (int i=0; i<8; ++i) {
+    ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerP");
+    consumerHelper.SetPrefix (prefix);
+    consumerHelper.SetAttribute("RetxTimer", StringValue ("1000ms")); 
+    consumerHelper.SetAttribute ("Frequency", StringValue ("1")); // 100 interests a second
+    consumerHelper.SetAttribute("LifeTime", StringValue ("1010ms"));
+    consumerHelper.Install (consumerNodes[i]);
+  }
 
-  ndn::AppHelper producerHelper ("ns3::ndn::ProducerD");
+  ndn::AppHelper producerHelper ("ns3::ndn::ProducerP");
   producerHelper.SetPrefix (prefix);
   producerHelper.SetAttribute("Frequency", StringValue ("10")); // 100 data a second
   producerHelper.SetAttribute ("PayloadSize", StringValue("1024"));
@@ -97,9 +106,9 @@ main (int argc, char *argv[])
   ndn::GlobalRoutingHelper::CalculateRoutes ();
 
   // add tracer to record in file
-  ndn::AppPacketTracer::InstallAll ("scratch/subdir/record/line-detect-packet-record.txt");
+  ndn::AppPacketTracer::InstallAll ("scratch/subdir/record/tree-pull-packet-record.txt");
 
-  Simulator::Stop (Seconds (3000.0));
+  Simulator::Stop (Seconds (1500.0));
 
   Simulator::Run ();
   Simulator::Destroy ();

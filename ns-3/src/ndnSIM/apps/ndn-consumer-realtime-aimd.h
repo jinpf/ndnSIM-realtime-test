@@ -18,8 +18,8 @@
  * Author: Jin Pengfei <jinpengfei@cstnet.cn>
  */
 
-#ifndef NDN_CONSUMER_D_H
-#define NDN_CONSUMER_D_H
+#ifndef NDN_CONSUMER_A_H
+#define NDN_CONSUMER_A_H
 
 #include "ndn-app.h"
 #include "ns3/random-variable.h"
@@ -43,7 +43,7 @@ namespace ndn {
  * @ingroup ndn-apps
  * \brief NDN application for sending out Interest packets
  */
-class ConsumerD: public App
+class ConsumerA: public App
 {
 public:
   static TypeId GetTypeId ();
@@ -52,8 +52,8 @@ public:
    * \brief Default constructor
    * Sets up randomizer function and packet sequence number
    */
-  ConsumerD ();
-  virtual ~ConsumerD () {};
+  ConsumerA ();
+  virtual ~ConsumerA () {};
 
   // From App
   // virtual void
@@ -85,15 +85,6 @@ protected:
    */
   virtual void
   ScheduleNextPacket ();
-
-  void
-  ScheduleNextDetect ();
-
-  void 
-  SendDetect ();
-
-  void
-  OnDetectData (Ptr<const Data> data);
 
   /**
    * \brief Checks if the packet need to be retransmitted becuase of retransmission timer expiration
@@ -127,7 +118,7 @@ protected:
   Time            m_retxTimer; ///< @brief Currently estimated retransmission timer
 
   bool            m_firstTime;
-  double          m_frequency; // Frequency of detect interest packets (in hertz)
+  // double          m_frequency; // Frequency of detect interest packets (in hertz)
 
   // Time            m_offTime;             ///< \brief Time interval between packets
   Name            m_interestName;        ///< \brief NDN Name of the Interest (use Name)
@@ -151,7 +142,6 @@ private:
 
   std::map <uint32_t,Seq_Info> In_flight_Seq; // record in windows seq
   
-  std::map <uint32_t,Time>  m_detect_send_time; // record detect information for calculate real rtt
   Time         m_r_Rtt_a;
   Time         m_r_Rtt_b;
   Time         p_detect_time;

@@ -3,7 +3,7 @@
 # @Author: jinpf
 # @Date:   2015-07-24 22:14:06
 # @Last Modified by:   jinpf
-# @Last Modified time: 2015-11-19 22:09:36
+# @Last Modified time: 2016-03-23 13:49:09
 
 
 def read_calculate(fname):
@@ -66,6 +66,9 @@ def write_delay(fname,delay):
 
 if __name__ == '__main__':
 	type = 'pull'
-	delay = read_calculate('line-'+type+'-packet-record.txt')
+	# delay = read_calculate('line-'+type+'-packet-record.txt')
+	# delay = read_calculate('bottle-'+type+'-packet-record.txt')
+	delay = read_calculate('tree-'+type+'-packet-record.txt')
+
 	print ave_delay(delay)
 	write_delay('app_'+type+'_delay.txt',delay)
