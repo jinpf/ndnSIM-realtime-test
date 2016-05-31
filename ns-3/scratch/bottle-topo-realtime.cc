@@ -59,7 +59,7 @@ main (int argc, char *argv[])
   ndn::StackHelper ndnHelper;
   ndnHelper.SetForwardingStrategy ("ns3::ndn::fw::HybridForwording");
   // ndnHelper.SetContentStore("ns3::ndn::cs::Nocache");
-  ndnHelper.SetContentStore("ns3::ndn::cs::Lru","MaxSize","18");
+  ndnHelper.SetContentStore("ns3::ndn::cs::Lru","MaxSize","0");
 
   ndnHelper.InstallAll ();
 
@@ -78,10 +78,10 @@ main (int argc, char *argv[])
   std::string prefix = "/prefix";
 
   for (int i=0; i<3; ++i) {
-    ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerP");
+    ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerR");
     consumerHelper.SetPrefix (prefix);
     consumerHelper.SetAttribute("RetxTimer", StringValue ("1000ms")); 
-    consumerHelper.SetAttribute ("Frequency", StringValue ("1")); // 100 interests a second
+    // consumerHelper.SetAttribute ("Frequency", StringValue ("1")); // 100 interests a second
     consumerHelper.SetAttribute("LifeTime", StringValue ("1010ms"));
     consumerHelper.Install (consumerNodes[i]);
   }

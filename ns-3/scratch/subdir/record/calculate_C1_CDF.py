@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # @Author: jinpf
 # @Date:   2015-11-09 14:25:33
-# @Last Modified by:   jpflc
-# @Last Modified time: 2015-11-16 22:11:48
+# @Last Modified by:   jinpf
+# @Last Modified time: 2016-03-30 10:57:22
 
 def read_delay(fname):
 	with open(fname,'r') as f:

@@ -58,8 +58,8 @@ main (int argc, char *argv[])
   // Install NDN stack on all nodes
   ndn::StackHelper ndnHelper;
   ndnHelper.SetForwardingStrategy ("ns3::ndn::fw::HybridForwording");
-  // ndnHelper.SetContentStore("ns3::ndn::cs::Nocache");
-  ndnHelper.SetContentStore("ns3::ndn::cs::Lru","MaxSize","24");
+  ndnHelper.SetContentStore("ns3::ndn::cs::Nocache");
+  // ndnHelper.SetContentStore("ns3::ndn::cs::Lru","MaxSize","24");
 
   ndnHelper.InstallAll ();
 
@@ -75,11 +75,11 @@ main (int argc, char *argv[])
   // Install NDN applications
   std::string prefix = "/prefix";
 
-  ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerP");
+  ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerR");
   consumerHelper.SetPrefix (prefix);
   consumerHelper.SetAttribute("RetxTimer", StringValue ("1000ms"));
   consumerHelper.SetAttribute("LifeTime", StringValue ("1010ms"));
-  consumerHelper.SetAttribute ("Frequency", StringValue ("1")); // 100 interests a second
+  // consumerHelper.SetAttribute ("Frequency", StringValue ("5")); // 100 interests a second
   consumerHelper.Install (consumerNodes);
 
   ndn::AppHelper producerHelper ("ns3::ndn::ProducerP");
